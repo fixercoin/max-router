@@ -1,0 +1,26 @@
+{
+  "name": "max-router",
+  "version": "1.0.0",
+  "description": "MAX Router - Solana DEX Aggregator",
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test",
+    "deploy:devnet": "anchor deploy --provider.cluster devnet",
+    "deploy:mainnet": "anchor deploy --provider.cluster mainnet",
+    "gateway:dev": "cd api-gateway && npm run dev",
+    "dashboard:dev": "cd developer-dashboard && npm run dev",
+    "engine:dev": "cd off-chain-engine && npm run dev"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-mocha": "^10.0.0",
+    "chai": "^4.3.0",
+    "mocha": "^10.0.0"
+  }
+}
