@@ -1,0 +1,21 @@
+name = "max-router-gateway"
+main = "functions/max/v1/[[route]].ts"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "DEVELOPERS_KV"
+id = "your_developers_kv_id"
+
+[[kv_namespaces]]
+binding = "API_KEYS_KV"
+id = "your_api_keys_kv_id"
+
+[[kv_namespaces]]
+binding = "USAGE_KV"
+id = "your_usage_kv_id"
+
+[env.production]
+routes = [{ pattern = "fixorium.com.pk/max/*", custom_domain = true }]
+
+[env.dev]
+routes = [{ pattern = "dev.fixorium.com.pk/max/*", custom_domain = true }]
