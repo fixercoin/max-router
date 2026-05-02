@@ -1,0 +1,17 @@
+[package]
+name = "max-router"
+version = "0.1.0"
+description = "MAX Router - Solana DEX Aggregator with 0.01% fee"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "max_router"
+
+[dependencies]
+anchor-lang = "0.29.0"
+anchor-spl = "0.29.0"
+
+[features]
+default = []
+idl-build = ["anchor-lang/idl-build"]
