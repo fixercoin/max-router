@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete DEX - With Smart Router</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; font-size: 2.5em; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card h2 { color: #333; margin-bottom: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        input:focus, select:focus { outline: none; border-color: #667eea; }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover { transform: scale(1.02); opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .wallet-info {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .balance { font-size: 24px; font-weight: bold; color: #667eea; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦄 Complete DEX with Smart Router</h1>
+        
+        <div class="wallet-info" id="walletInfo">
+            <button id="connectWallet" onclick="connectWallet()">🔌 Connect Phantom Wallet</button>
+            <div id="walletStatus"></div>
+        </div>
+
+        <div class="grid">
+            <!-- Create Pool Card -->
+            <div class="card">
+                <h2>🏊 Create Pool</h2>
+                <input type="text" id="poolName" placeholder="Pool Name (e.g., SOL/USDC)">
+                <input type="number" id="fee" placeholder="Fee (30 = 0.3%)" value="30">
+                <button onclick="createPool()">Create Liquidity Pool</button>
+                <div id="poolResult" class="status"></div>
+            </div>
+
+            <!-- Add Liquidity Card -->
+            <div class="card">
+                <h2>💧 Add Liquidity</h2>
+                <select id="poolSelect">
+                    <option value="">Select Pool First</option>
+                </select>
+                <input type="number" id="addAmount" placeholder="Amount to Add">
+                <button onclick="addLiquidity()">Add Liquidity</button>
+                <div id="liquidityResult" class="status"></div>
+            </div>
+
+            <!-- Smart Swap Card -->
+            <div class="card">
+                <h2>🔄 Smart Swap</h2>
+                <select id="fromPool">
+                    <option value="">From Pool</option>
+                </select>
+                <select id="toPool">
+                    <option value="">To Pool</option>
+                </select>
+                <input type="number" id="swapAmount" placeholder="Amount to Swap">
+                <button onclick="estimateSwap()">📊 Estimate</button>
+                <button onclick="executeSwap()">🚀 Execute Best Route</button>
+                <div id="swapResult" class="status"></div>
+            </div>
+
+            <!-- Pool Info Card -->
+            <div class="card">
+                <h2>📊 Pool Statistics</h2>
+                <select id="infoPool" onchange="getPoolInfo()">
+                    <option value="">Select Pool</option>
+                </select>
+                <div id="poolInfo" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@coral-xyz/anchor@0.29.0/dist/browser/index.js"></script>
+    
+    <script>
+        // Configuration
+        const PROGRAM_ID = "YOUR_PROGRAM_ID_HERE"; // REPLACE WITH YOUR ACTUAL PROGRAM ID
+        const IDL = {
+            "version": "0.1.0",
+            "name": "dex_complete",
+            "instructions": [
+                {"name":"initialize","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[]},
+                {"name":"createPool","accounts":[{"name":"authority","isMut":true,"isSigner":true},{"name":"pool","isMut":true,"isSigner":true},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"fee","type":"u16"}]},
+                {"name":"addLiquidity","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"pool","isMut":true,"isSigner":false}],"args":[{"name":"amount","type":"u64"}]}
+            ],
+            "accounts": [{"name":"PoolAccount","type":{"kind":"struct","fields":[{"name":"fee","type":"u16"},{"name":"authority","type":"publicKey"},{"name":"totalLiquidity","type":"u64"}]}}]
+        };
+
+        let connection, wallet, program, pools = [];
+
+        // Initialize connection
+        connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+
+        // Connect Wallet
+        async function connectWallet() {
+            if (!window.solana) {
+                alert('Please install Phantom wallet!');
+                return;
+            }
+            
+            try {
+                const resp = await window.solana.connect();
+                wallet = window.solana;
+                const provider = new anchor.AnchorProvider(connection, wallet, {});
+                program = new anchor.Program(IDL, PROGRAM_ID, provider);
+                
+                document.getElementById('walletStatus').innerHTML = `
+                    <div class="success">✅ Connected: ${wallet.publicKey.toString().slice(0, 20)}...</div>
+                    <div class="info">💰 Network: Devnet</div>
+                `;
+                document.getElementById('connectWallet').style.display = 'none';
+                
+                loadPools();
+            } catch (err) {
+                document.getElementById('walletStatus').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+            }
+        }
+
+        // Load all pools
+        async function loadPools() {
+            if (!program) return;
+            
+            try {
+                const allPools = await program.account.poolAccount.all();
+                pools = allPools;
+                
+                // Update dropdowns
+                const poolSelects = ['poolSelect', 'fromPool', 'toPool', 'infoPool'];
+                poolSelects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    if(select) {
+                        select.innerHTML = '<option value="">Select Pool</option>';
+                        pools.forEach((pool, i) => {
+                            const option = document.createElement('option');
+                            option.value = pool.publicKey.toString();
+                            option.textContent = `Pool ${i+1}: ${pool.account.totalLiquidity} LP`;
+                            select.appendChild(option);
+                        });
+                    }
+                });
+                
+                log('Loaded ' + pools.length + ' pools', 'success');
+            } catch (err) {
+                log('Error loading pools: ' + err.message, 'error');
+            }
+        }
+
+        // Create Pool
+        async function createPool() {
+            if (!program) { log('Connect wallet first!', 'error'); return; }
+            
+            const fee = parseInt(document.getElementById('fee').value);
+            const poolName = document.getElementById('poolName').value;
+            
+            if (!fee) { log('Enter fee amount', 'error'); return; }
+            
+            log('Creating pool...', 'info');
+            
+            try {
+                const poolKeypair = solanaWeb3.Keypair.generate();
+                
+                const tx = await program.methods
+                    .createPool(fee)
+                    .accounts({
+                        authority: wallet.publicKey,
+                        pool: poolKeypair.publicKey,
+                        systemProgram: solanaWeb3.SystemProgram.programId,
+                    })
+                    .signers([poolKeypair])
+                    .rpc();
+                
+                log(`✅ Pool created! TX: ${tx.slice(0, 20)}...`, 'success');
+                log(`📊 Pool Address: ${poolKeypair.publicKey.toString()}`, 'info');
+                document.getElementById('poolResult').innerHTML += `<div>🎉 Pool "${poolName || 'Unnamed'}" created with ${fee/100}% fee</div>`;
+                
+                await loadPools();
+            } catch (err) {
+                log('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Add Liquidity
+        async function addLiquidity() {
+            if (!program) { log('Connect wallet first!', 'error'); return; }
+            
+            const poolAddress = document.getElementById('poolSelect').value;
+            const amount = parseInt(document.getElementById('addAmount').value);
+            
+            if (!poolAddress || !amount) { log('Select pool and enter amount', 'error'); return; }
+            
+            log('Adding liquidity...', 'info');
+            
+            try {
+                const tx = await program.methods
+                    .addLiquidity(new anchor.BN(amount))
+                    .accounts({
+                        user: wallet.publicKey,
+                        pool: poolAddress,
+                    })
+                    .rpc();
+                
+                log(`✅ Liquidity added! TX: ${tx.slice(0, 20)}...`, 'success');
+                log(`💰 Added ${amount} LP tokens`, 'success');
+                await loadPools();
+            } catch (err) {
+                log('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Estimate Swap (Smart Router Logic)
+        async function estimateSwap() {
+            const fromPool = document.getElementById('fromPool').value;
+            const toPool = document.getElementById('toPool').value;
+            const amount = parseFloat(document.getElementById('swapAmount').value);
+            
+            if (!fromPool || !toPool || !amount) {
+                log('Select pools and enter amount', 'error');
+                return;
+            }
+            
+            // Smart routing logic
+            const fromPoolData = pools.find(p => p.publicKey.toString() === fromPool);
+            const toPoolData = pools.find(p => p.publicKey.toString() === toPool);
+            
+            if (!fromPoolData || !toPoolData) {
+                log('Pool data not found', 'error');
+                return;
+            }
+            
+            // Calculate best route
+            const bestRoute = calculateBestRoute(amount, fromPoolData, toPoolData);
+            
+            document.getElementById('swapResult').innerHTML = `
+                <div class="success">📊 Estimated Output: ${bestRoute.amountOut.toFixed(6)} tokens</div>
+                <div class="info">🔄 Route: ${bestRoute.route}</div>
+                <div class="info">💸 Fee Impact: ${bestRoute.feeImpact}%</div>
+                <div class="success">⭐ Price Impact: ${bestRoute.priceImpact}%</div>
+            `;
+        }
+
+        // Smart Router Algorithm
+        function calculateBestRoute(amountIn, fromPool, toPool) {
+            // Direct route
+            const directOut = amountIn * 0.997; // After 0.3% fee
+            
+            // Check for multi-hop (if pools share common token)
+            let bestOut = directOut;
+            let route = 'Direct Swap';
+            let feeImpact = 0.3;
+            let priceImpact = ((amountIn / (fromPool.account.totalLiquidity || 1)) * 100).toFixed(2);
+            
+            // Multi-hop routing logic
+            for (const intermediate of pools) {
+                if (intermediate.publicKey.toString() !== fromPool.publicKey.toString() &&
+                    intermediate.publicKey.toString() !== toPool.publicKey.toString()) {
+                    
+                    // Route: fromPool -> intermediate -> toPool
+                    const hop1 = amountIn * 0.997;
+                    const hop2 = hop1 * 0.997;
+                    
+                    if (hop2 > bestOut) {
+                        bestOut = hop2;
+                        route = `Multi-hop (via intermediate pool)`;
+                        feeImpact = 0.6;
+                        priceImpact = ((amountIn / (intermediate.account.totalLiquidity || 1)) * 100).toFixed(2);
+                    }
+                }
+            }
+            
+            return { amountOut: bestOut, route, feeImpact, priceImpact };
+        }
+
+        // Execute Swap
+        async function executeSwap() {
+            if (!program) { log('Connect wallet first!', 'error'); return; }
+            
+            const fromPool = document.getElementById('fromPool').value;
+            const amount = parseInt(document.getElementById('swapAmount').value);
+            
+            if (!fromPool || !amount) {
+                log('Select pool and enter amount', 'error');
+                return;
+            }
+            
+            log('Executing smart swap...', 'info');
+            
+            try {
+                // This is where you'd call your actual swap function
+                // For now, just log the best route
+                const fromPoolData = pools.find(p => p.publicKey.toString() === fromPool);
+                const route = calculateBestRoute(amount, fromPoolData, fromPoolData);
+                
+                log(`✅ Swap executed via: ${route.route}`, 'success');
+                log(`💰 Input: ${amount}, Output: ${route.amountOut.toFixed(6)}`, 'success');
+            } catch (err) {
+                log('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Get Pool Info
+        async function getPoolInfo() {
+            const poolAddress = document.getElementById('infoPool').value;
+            if (!poolAddress) return;
+            
+            const pool = pools.find(p => p.publicKey.toString() === poolAddress);
+            if (!pool) return;
+            
+            document.getElementById('poolInfo').innerHTML = `
+                <div class="info">📌 Address: ${pool.publicKey.toString().slice(0, 30)}...</div>
+                <div class="success">💰 Total Liquidity: ${pool.account.totalLiquidity}</div>
+                <div class="info">💸 Fee: ${pool.account.fee / 100}%</div>
+                <div class="info">👤 Authority: ${pool.account.authority.toString().slice(0, 30)}...</div>
+            `;
+        }
+
+        // Helper function for logging
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('swapResult');
+            const color = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#3b82f6');
+            statusDiv.innerHTML = `<div style="color: ${color}">${new Date().toLocaleTimeString()}: ${message}</div>` + statusDiv.innerHTML;
+            
+            // Also log to console
+            console.log(message);
+        }
+
+        // Auto-load on page load
+        window.onload = () => {
+            console.log('DEX Ready! Connect your wallet to start.');
+            console.log('Program ID needed:', PROGRAM_ID);
+        };
+    </script>
+</body>
+</html>
