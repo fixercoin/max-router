@@ -42,10 +42,11 @@ const LiquidityPoolsPage: React.FC = () => {
         feePayer: wallet.publicKey,
       });
 
-      const feeBuffer = new Uint8Array(new Uint16Array([fee]).buffer);
-      const dataArray = new Uint8Array(1 + feeBuffer.length);
-      dataArray[0] = 0;
-      dataArray.set(feeBuffer, 1);
+      // Instruction discriminator (2 for createPool) + fee as u16 (little-endian)
+      const dataArray = new Uint8Array(3);
+      dataArray[0] = 2; // createPool instruction index
+      dataArray[1] = fee & 0xFF; // Low byte
+      dataArray[2] = (fee >> 8) & 0xFF; // High byte
 
       const createPoolIx = new solanaWeb3.TransactionInstruction({
         programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
@@ -56,7 +57,7 @@ const LiquidityPoolsPage: React.FC = () => {
           { pubkey: new solanaWeb3.PublicKey(tokenB), isSigner: false, isWritable: false },
           { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
         ],
-        data: dataArray,
+        data: Buffer.from(dataArray),
       });
 
       transaction.add(createPoolIx);
@@ -139,10 +140,13 @@ const LiquidityPoolsPage: React.FC = () => {
         feePayer: wallet.publicKey,
       });
 
-      const amountBuffer = new Uint8Array(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer);
-      const addLiquidityData = new Uint8Array(1 + amountBuffer.length);
-      addLiquidityData[0] = 1;
-      addLiquidityData.set(amountBuffer, 1);
+      // Instruction discriminator (3 for addLiquidity) + amount as u64 (little-endian)
+      const amountBigInt = BigInt(Math.floor(amount * 1e9));
+      const addLiquidityData = new Uint8Array(9);
+      addLiquidityData[0] = 3; // addLiquidity instruction index
+      for (let i = 0; i < 8; i++) {
+        addLiquidityData[i + 1] = Number((amountBigInt >> BigInt(i * 8)) & BigInt(0xFF));
+      }
 
       const addLiquidityIx = new solanaWeb3.TransactionInstruction({
         programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
