@@ -346,17 +346,20 @@
 
             async function deployToken() {
                 if(!wallet) { alert('Connect wallet'); return; }
+                
                 const name = document.getElementById('tokenName').value;
                 const symbol = document.getElementById('tokenSymbol').value;
                 const decimals = parseInt(document.getElementById('tokenDecimals').value);
                 const totalSupply = parseInt(document.getElementById('tokenSupply').value);
                 const statusDiv = document.getElementById('deployStatus');
-                statusDiv.innerHTML = '<span class="info">⏳ deploying ...</span>';
+                
+                statusDiv.innerHTML = '<span class="info">⏳ Preparing transaction...</span>';
                 
                 try {
                     const mintKeypair = solanaWeb3.Keypair.generate();
                     const rent = await connection.getMinimumBalanceForRentExemption(82);
                     
+                    // Create transaction
                     const transaction = new solanaWeb3.Transaction();
                     
                     transaction.add(
@@ -369,44 +372,68 @@
                         })
                     );
                     
-                    // Get fresh blockhash with commitment
-                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+                    // Get fresh blockhash with proper commitment
+                    statusDiv.innerHTML = '<span class="info">⏳ Getting blockhash...</span>';
+                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+                    
                     transaction.recentBlockhash = blockhash;
                     transaction.feePayer = wallet.publicKey;
                     
-                    // Sign and send
+                    // Sign transaction
+                    statusDiv.innerHTML = '<span class="info">⏳ Sign transaction in wallet...</span>';
                     const signed = await wallet.signTransaction(transaction);
-                    const txid = await connection.sendRawTransaction(signed.serialize());
                     
-                    // Confirm transaction with retry
-                    statusDiv.innerHTML = '<span class="info">⏳ confirming transaction...</span>';
-                    
-                    const confirmation = await connection.confirmTransaction({
-                        signature: txid,
-                        blockhash: blockhash,
-                        lastValidBlockHeight: lastValidBlockHeight
+                    // Send transaction
+                    statusDiv.innerHTML = '<span class="info">⏳ Sending to network...</span>';
+                    const signature = await connection.sendRawTransaction(signed.serialize(), {
+                        skipPreflight: true,
+                        preflightCommitment: 'confirmed'
                     });
                     
-                    if (confirmation.value.err) {
-                        throw new Error(`Transaction failed: ${confirmation.value.err}`);
+                    // Wait for confirmation with retry
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
+                    
+                    let confirmed = false;
+                    let attempts = 0;
+                    
+                    while (!confirmed && attempts < 15) {
+                        const status = await connection.getSignatureStatus(signature);
+                        if (status.value && status.value.confirmationStatus) {
+                            confirmed = true;
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        attempts++;
                     }
                     
+                    if (!confirmed) {
+                        // Try one more confirmation method
+                        await connection.confirmTransaction({
+                            signature: signature,
+                            blockhash: blockhash,
+                            lastValidBlockHeight: lastValidBlockHeight
+                        });
+                    }
+                    
+                    // Save token data
                     deployedTokens.push({ 
                         mint: mintKeypair.publicKey.toString(), 
                         name, symbol, decimals, 
                         totalSupply: totalSupply, 
-                        txid 
+                        txid: signature 
                     });
                     saveTokens();
                     
                     statusDiv.innerHTML = `
                         <span class="success">✅ Token deployed successfully!</span><br>
                         📄 Mint: ${mintKeypair.publicKey.toString()}<br>
-                        🔗 <a href="https://explorer.solana.com/address/${mintKeypair.publicKey.toString()}?cluster=devnet" target="_blank" style="color:#6C9BD2">View on Explorer</a>
+                        🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Transaction</a><br>
+                        🔗 <a href="https://explorer.solana.com/address/${mintKeypair.publicKey.toString()}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Token</a>
                     `;
+                    
                 } catch(e) { 
                     statusDiv.innerHTML = `<span class="error">❌ ${e.message}</span>`;
-                    console.error(e);
+                    console.error('Deployment error:', e);
                 }
             }
 
