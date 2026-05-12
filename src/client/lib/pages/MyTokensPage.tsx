@@ -26,7 +26,7 @@ const MyTokensPage: React.FC = () => {
           '— No tokens deployed —'
         ) : (
           <div>
-            {deployedTokens.map((t) => (
+            {deployedTokens.map((t, idx) => (
               <div
                 key={t.mint}
                 style={{
@@ -45,20 +45,46 @@ const MyTokensPage: React.FC = () => {
                   <b>{t.symbol}</b> / {t.name}
                   <br />
                   <span style={{ fontSize: '11px', color: '#6C809C' }}>
-                    {t.mint.slice(0, 28)}…
+                    Mint: {t.mint.slice(0, 28)}…
                   </span>
+                  {t.isVerified && (
+                    <span style={{ fontSize: '10px', color: '#4CAF50', marginLeft: '8px' }}>
+                      ✓ Verified
+                    </span>
+                  )}
+                  {t.circulatingSupply && (
+                    <br />
+                    <span style={{ fontSize: '10px', color: '#6C809C' }}>
+                      Supply: {parseInt(t.circulatingSupply) / Math.pow(10, t.decimals)} {t.symbol}
+                    </span>
+                  )}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     className="copy-mini"
                     onClick={() => handleCopyMint(t.mint)}
+                    style={{
+                      background: '#1E2A3A',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: '#6C809C'
+                    }}
                   >
                     📋 COPY
                   </button>
                   <button
                     className="copy-mini"
                     onClick={() => handleViewToken(t.mint)}
-                    style={{ cursor: 'pointer', color: '#6C9BD2' }}
+                    style={{
+                      background: '#1E2A3A',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: '#6C9BD2'
+                    }}
                   >
                     👁 VIEW
                   </button>
