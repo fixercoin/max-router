@@ -9,7 +9,7 @@ const DeployTokenPage: React.FC = () => {
   const [tokenName, setTokenName] = useState('MAX Token');
   const [tokenSymbol, setTokenSymbol] = useState('MAX');
   const [tokenDecimals, setTokenDecimals] = useState(6);
-  const [tokenSupply, setTokenSupply] = useState(10000000); // ADD THIS LINE
+  const [tokenSupply, setTokenSupply] = useState(100,000,000); // ADD THIS LINE
   const [status, setStatus] = useState('⚡ Ready — Solana Devnet');
 
   // Initialize DEX first
