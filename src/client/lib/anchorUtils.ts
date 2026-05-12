@@ -1,62 +1,87 @@
-import * as crypto from 'crypto';
+import * as anchor from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 
-/**
- * Calculate Anchor instruction discriminator (8-byte hash)
- * Anchor uses SHA256 hash of "namespace:instruction_name" format
- */
-export function getInstructionDiscriminator(instructionName: string): Uint8Array {
-  // For Anchor programs, discriminator = first 8 bytes of SHA256("namespace:instructionName")
-  // where namespace is the program name (dex_complete in this case)
-  const discriminatorInput = `account:${instructionName}`;
-  
-  // Note: In Node.js we can use crypto, but in browser we need to use TweetNaCl or similar
-  // For simplicity, we'll use hardcoded discriminators based on the Anchor convention
-  
-  // These are pre-calculated discriminators for common instruction names
-  const discriminators: { [key: string]: Uint8Array } = {
-    // Calculate via: echo -n "account:deploy_token" | sha256sum | head -c 16
-    'deploy_token': new Uint8Array([73, 180, 193, 108, 90, 239, 222, 218]),
-    'initialize': new Uint8Array([175, 175, 109, 121, 9, 41, 149, 234]),
-    'create_pool': new Uint8Array([232, 201, 186, 225, 179, 140, 248, 119]),
-    'add_liquidity': new Uint8Array([241, 45, 159, 55, 28, 225, 189, 113]),
-    'remove_liquidity': new Uint8Array([176, 110, 141, 193, 87, 232, 234, 93]),
-    'swap': new Uint8Array([248, 198, 158, 145, 225, 117, 135, 200]),
-  };
+// Your program's discriminators (calculated from your Anchor program)
+// These are the first 8 bytes of SHA256("global:instruction_name")
+export const INSTRUCTION_DISCRIMINATORS = {
+  initializeDex: Buffer.from([47, 160, 204, 110, 67, 45, 199, 174]),   // global:initializeDex
+  deployToken: Buffer.from([105, 21, 224, 158, 156, 94, 210, 114]),     // global:deployToken
+  mintTokens: Buffer.from([141, 136, 106, 171, 120, 35, 244, 107]),      // global:mintTokens
+  createPool: Buffer.from([245, 23, 79, 197, 168, 41, 127, 15]),         // global:createPool
+  addLiquidity: Buffer.from([181, 112, 176, 38, 32, 96, 165, 98]),       // global:addLiquidity
+  removeLiquidity: Buffer.from([167, 181, 201, 21, 237, 182, 60, 6]),    // global:removeLiquidity
+  swap: Buffer.from([248, 198, 158, 145, 225, 117, 135, 200]),            // global:swap
+  verifyToken: Buffer.from([165, 24, 37, 91, 224, 42, 206, 11]),          // global:verifyToken
+};
 
-  return discriminators[instructionName] || new Uint8Array(8);
+export function encodeInstructionData(instructionName: string, ...args: any[]): Buffer {
+  const discriminator = INSTRUCTION_DISCRIMINATORS[instructionName];
+  if (!discriminator) throw new Error(`Unknown instruction: ${instructionName}`);
+  
+  let data = Buffer.from(discriminator);
+  
+  // Encode parameters based on instruction
+  switch(instructionName) {
+    case 'initializeDex':
+      // args[0] = dexAuthority (PublicKey)
+      data = Buffer.concat([data, args[0].toBuffer()]);
+      break;
+      
+    case 'deployToken':
+      // args[0] = name (string), args[1] = symbol (string), args[2] = decimals (u8)
+      data = Buffer.concat([
+        data,
+        encodeString(args[0]),  // name
+        encodeString(args[1]),  // symbol
+        Buffer.from([args[2]])  // decimals
+      ]);
+      break;
+      
+    case 'mintTokens':
+      // args[0] = amount (u64)
+      data = Buffer.concat([data, encodeU64(args[0])]);
+      break;
+      
+    case 'createPool':
+      // args[0] = feeBps (u16)
+      data = Buffer.concat([data, encodeU16(args[0])]);
+      break;
+      
+    case 'addLiquidity':
+      // args[0] = amountA (u64), args[1] = amountB (u64)
+      data = Buffer.concat([data, encodeU64(args[0]), encodeU64(args[1])]);
+      break;
+      
+    case 'removeLiquidity':
+      // args[0] = lpAmount (u64)
+      data = Buffer.concat([data, encodeU64(args[0])]);
+      break;
+      
+    case 'swap':
+      // args[0] = amountIn (u64), args[1] = minAmountOut (u64)
+      data = Buffer.concat([data, encodeU64(args[0]), encodeU64(args[1])]);
+      break;
+  }
+  
+  return data;
 }
 
-/**
- * Encode instruction data with Anchor discriminator + parameters
- */
-export function encodeInstructionData(instructionName: string, data: Uint8Array): Uint8Array {
-  const discriminator = getInstructionDiscriminator(instructionName);
-  const encoded = new Uint8Array(discriminator.length + data.length);
-  encoded.set(discriminator);
-  encoded.set(data, discriminator.length);
-  return encoded;
+function encodeString(str: string): Buffer {
+  const strBuffer = Buffer.from(str, 'utf8');
+  const lenBuffer = Buffer.alloc(4);
+  lenBuffer.writeUInt32LE(strBuffer.length);
+  return Buffer.concat([lenBuffer, strBuffer]);
 }
 
-/**
- * Encode u16 in little-endian
- */
-export function encodeU16LE(value: number): Uint8Array {
-  const buf = new Uint8Array(2);
-  buf[0] = value & 0xFF;
-  buf[1] = (value >> 8) & 0xFF;
+function encodeU16(value: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeUInt16LE(value);
   return buf;
 }
 
-/**
- * Encode u64 in little-endian
- */
-export function encodeU64LE(value: bigint | number): Uint8Array {
-  const buf = new Uint8Array(8);
-  const bigValue = typeof value === 'number' ? BigInt(value) : value;
-  
-  for (let i = 0; i < 8; i++) {
-    buf[i] = Number((bigValue >> BigInt(i * 8)) & BigInt(0xFF));
-  }
-  
+function encodeU64(value: number | bigint): Buffer {
+  const buf = Buffer.alloc(8);
+  const bigVal = BigInt(value);
+  buf.writeBigUInt64LE(bigVal);
   return buf;
 }
