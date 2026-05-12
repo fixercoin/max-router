@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey, Keypair, Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
-import idl from '../idl.json'; // Your IDL file
+import idl from '../idl.json';
 
 export const DEX_PROGRAM_ID = new PublicKey("36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk");
 
@@ -85,9 +85,168 @@ export class MaxDexClient {
     return tx;
   }
 
-  async getTokenMetadataAddress(mint: PublicKey): Promise<PublicKey> {
+  // ========== ADD THESE MISSING METHODS ==========
+
+  async createPool(tokenA: PublicKey, tokenB: PublicKey, feeBps: number): Promise<PublicKey> {
+    if (!this.dexState) {
+      const [address] = await PublicKey.findProgramAddress(
+        [Buffer.from("dex_state")],
+        DEX_PROGRAM_ID
+      );
+      this.dexState = address;
+    }
+    
+    const poolKeypair = Keypair.generate();
+    const tokenAVault = Keypair.generate();
+    const tokenBVault = Keypair.generate();
+    const lpMint = Keypair.generate();
+    
+    const tx = await this.program.methods
+      .createPool(feeBps)
+      .accounts({
+        authority: this.provider.wallet.publicKey,
+        pool: poolKeypair.publicKey,
+        tokenA: tokenA,
+        tokenB: tokenB,
+        tokenAVault: tokenAVault.publicKey,
+        tokenBVault: tokenBVault.publicKey,
+        lpMint: lpMint.publicKey,
+        dexState: this.dexState,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers([poolKeypair, tokenAVault, tokenBVault, lpMint])
+      .rpc();
+    
+    this.lastTx = tx;
+    return poolKeypair.publicKey;
+  }
+
+  async addLiquidity(
+    pool: PublicKey,
+    amountA: number,
+    amountB: number,
+    tokenA: PublicKey,
+    tokenB: PublicKey
+  ): Promise<string> {
+    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const userTokenA = await getAssociatedTokenAddress(tokenA, this.provider.wallet.publicKey);
+    const userTokenB = await getAssociatedTokenAddress(tokenB, this.provider.wallet.publicKey);
+    const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint, this.provider.wallet.publicKey);
+    
+    const tx = await this.program.methods
+      .addLiquidity(new anchor.BN(amountA), new anchor.BN(amountB))
+      .accounts({
+        user: this.provider.wallet.publicKey,
+        userTokenA: userTokenA,
+        userTokenB: userTokenB,
+        userLpToken: userLpToken,
+        pool: pool,
+        poolTokenAVault: poolAccount.tokenAVault,
+        poolTokenBVault: poolAccount.tokenBVault,
+        lpMint: poolAccount.lpMint,
+        poolAuthority: this.getPoolAuthorityAddress(pool),
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    
+    this.lastTx = tx;
+    return tx;
+  }
+
+  async removeLiquidity(pool: PublicKey, lpAmount: number): Promise<string> {
+    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const userTokenA = await getAssociatedTokenAddress(poolAccount.tokenA, this.provider.wallet.publicKey);
+    const userTokenB = await getAssociatedTokenAddress(poolAccount.tokenB, this.provider.wallet.publicKey);
+    const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint, this.provider.wallet.publicKey);
+    
+    const tx = await this.program.methods
+      .removeLiquidity(new anchor.BN(lpAmount))
+      .accounts({
+        user: this.provider.wallet.publicKey,
+        userTokenA: userTokenA,
+        userTokenB: userTokenB,
+        userLpToken: userLpToken,
+        pool: pool,
+        poolTokenAVault: poolAccount.tokenAVault,
+        poolTokenBVault: poolAccount.tokenBVault,
+        lpMint: poolAccount.lpMint,
+        poolAuthority: this.getPoolAuthorityAddress(pool),
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    
+    this.lastTx = tx;
+    return tx;
+  }
+
+  async swap(
+    pool: PublicKey,
+    tokenIn: PublicKey,
+    tokenOut: PublicKey,
+    amountIn: number,
+    minAmountOut: number
+  ): Promise<string> {
+    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const userTokenIn = await getAssociatedTokenAddress(tokenIn, this.provider.wallet.publicKey);
+    const userTokenOut = await getAssociatedTokenAddress(tokenOut, this.provider.wallet.publicKey);
+    
+    const tx = await this.program.methods
+      .swap(new anchor.BN(amountIn), new anchor.BN(minAmountOut))
+      .accounts({
+        user: this.provider.wallet.publicKey,
+        userTokenIn: userTokenIn,
+        userTokenOut: userTokenOut,
+        pool: pool,
+        poolTokenAVault: poolAccount.tokenAVault,
+        poolTokenBVault: poolAccount.tokenBVault,
+        tokenIn: tokenIn,
+        tokenOut: tokenOut,
+        poolAuthority: this.getPoolAuthorityAddress(pool),
+        dexState: this.dexState,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    
+    this.lastTx = tx;
+    return tx;
+  }
+
+  async getDexState(): Promise<any> {
+    if (!this.dexState) {
+      const [address] = await PublicKey.findProgramAddress(
+        [Buffer.from("dex_state")],
+        DEX_PROGRAM_ID
+      );
+      this.dexState = address;
+    }
+    return this.program.account.dexState.fetch(this.dexState);
+  }
+
+  async getPoolAccount(pool: PublicKey): Promise<any> {
+    return this.program.account.poolAccount.fetch(pool);
+  }
+
+  async getTokenMetadata(mint: PublicKey): Promise<any> {
+    const metadataAddress = await this.getTokenMetadataAddress(mint);
+    return this.program.account.tokenMetadata.fetch(metadataAddress);
+  }
+
+  private async getTokenMetadataAddress(mint: PublicKey): Promise<PublicKey> {
     const [address] = await PublicKey.findProgramAddress(
       [Buffer.from("token_metadata"), mint.toBuffer()],
+      DEX_PROGRAM_ID
+    );
+    return address;
+  }
+
+  private getPoolAuthorityAddress(pool: PublicKey): PublicKey {
+    const [address] = PublicKey.findProgramAddressSync(
+      [Buffer.from("pool"), pool.toBuffer()],
       DEX_PROGRAM_ID
     );
     return address;
