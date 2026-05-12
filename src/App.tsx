@@ -7,6 +7,7 @@ import SwapRouterPage from '@pages/SwapRouterPage';
 import MyTokensPage from '@pages/MyTokensPage';
 import TokenDetailsPage from '@pages/TokenDetailsPage';
 import { AppContext, AppContextType } from '@client/context/AppContext';
+import { MaxDexClient } from '@client/lib/maxDexClient';
 
 export type PageType = 'deploy' | 'pools' | 'swap' | 'tokens' | 'details';
 
@@ -16,13 +17,41 @@ const App: React.FC = () => {
   const [deployedTokens, setDeployedTokens] = useState<any[]>([]);
   const [pools, setPools] = useState<any[]>([]);
   const [selectedTokenForDetails, setSelectedTokenForDetails] = useState<string | null>(null);
+  const [dexClient, setDexClient] = useState<MaxDexClient | null>(null);
 
+  // Load saved data from localStorage
   useEffect(() => {
     const savedTokens = localStorage.getItem('MAX_deployed');
-    if (savedTokens) setDeployedTokens(JSON.parse(savedTokens));
+    if (savedTokens) {
+      try {
+        setDeployedTokens(JSON.parse(savedTokens));
+      } catch (e) {
+        console.error('Failed to parse saved tokens:', e);
+      }
+    }
+    
     const savedPools = localStorage.getItem('MAX_pools');
-    if (savedPools) setPools(JSON.parse(savedPools));
+    if (savedPools) {
+      try {
+        setPools(JSON.parse(savedPools));
+      } catch (e) {
+        console.error('Failed to parse saved pools:', e);
+      }
+    }
   }, []);
+
+  // Save to localStorage when data changes
+  useEffect(() => {
+    if (deployedTokens.length > 0) {
+      localStorage.setItem('MAX_deployed', JSON.stringify(deployedTokens));
+    }
+  }, [deployedTokens]);
+
+  useEffect(() => {
+    if (pools.length > 0) {
+      localStorage.setItem('MAX_pools', JSON.stringify(pools));
+    }
+  }, [pools]);
 
   const contextValue: AppContextType = {
     wallet,
@@ -35,6 +64,8 @@ const App: React.FC = () => {
     setCurrentPage,
     selectedTokenForDetails,
     setSelectedTokenForDetails,
+    dexClient,
+    setDexClient,
   };
 
   return (
