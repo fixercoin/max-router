@@ -1,16 +1,44 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { connection, TOKEN_PROGRAM_ID } from '../lib/solanaService';
-import * as solanaWeb3 from '@solana/web3.js';
+import { MaxDexClient } from '../lib/maxDexClient';
+import { Connection, PublicKey } from '@solana/web3.js';
 import './Page.css';
 
 const DeployTokenPage: React.FC = () => {
-  const { wallet, deployedTokens, setDeployedTokens } = useAppContext();
+  const { wallet, deployedTokens, setDeployedTokens, dexClient, setDexClient } = useAppContext();
   const [tokenName, setTokenName] = useState('MAX Token');
   const [tokenSymbol, setTokenSymbol] = useState('MAX');
-  const [tokenDecimals, setTokenDecimals] = useState(9);
-  const [tokenSupply, setTokenSupply] = useState(10000000);
+  const [tokenDecimals, setTokenDecimals] = useState(6);
   const [status, setStatus] = useState('⚡ Ready — Solana Devnet');
+  const [dexState, setDexState] = useState<any>(null);
+
+  // Initialize DEX first
+  const initializeDex = async () => {
+    if (!wallet) {
+      alert('Connect wallet first');
+      return false;
+    }
+
+    setStatus('⏳ Initializing DEX...');
+
+    try {
+      const connection = new Connection('https://api.devnet.solana.com');
+      const client = new MaxDexClient(connection, wallet);
+      
+      await client.initializeDex();
+      setDexClient(client);
+      setStatus('✅ DEX Initialized! Ready to deploy token.');
+      return true;
+    } catch (e: any) {
+      // If DEX already initialized, try to get existing state
+      if (e.message.includes('already in use')) {
+        setStatus('✅ DEX already initialized. Ready to deploy token.');
+        return true;
+      }
+      setStatus(`❌ DEX Init failed: ${e.message}`);
+      return false;
+    }
+  };
 
   const handleDeployToken = async () => {
     if (!wallet) {
@@ -18,101 +46,52 @@ const DeployTokenPage: React.FC = () => {
       return;
     }
 
-    setStatus('⏳ Preparing transaction...');
+    setStatus('⏳ Preparing token deployment...');
 
     try {
-      if (!window.solana || !window.solana.publicKey) {
-        setStatus('❌ Wallet disconnected. Please reconnect.');
-        return;
+      // Initialize DEX if not already done
+      let client = dexClient;
+      if (!client) {
+        const connection = new Connection('https://api.devnet.solana.com');
+        client = new MaxDexClient(connection, wallet);
+        setDexClient(client);
       }
 
-      const mintKeypair = solanaWeb3.Keypair.generate();
-      const rent = await connection.getMinimumBalanceForRentExemption(82);
+      // Deploy token using YOUR program
+      setStatus('⏳ Deploying token via MAX DEX program...');
+      const mintAddress = await client.deployToken(tokenName, tokenSymbol, tokenDecimals);
+      
+      // Mint initial supply (6 decimals: 10,000,000 = 10 tokens)
+      const initialSupply = tokenSupply * Math.pow(10, tokenDecimals);
+      setStatus('⏳ Minting initial supply...');
+      await client.mintTokens(mintAddress, initialSupply);
 
-      setStatus('⏳ Getting fresh blockhash...');
-      const blockhashData = await connection.getLatestBlockhash('confirmed');
+      // Get token metadata from your program
+      const metadataAddress = await client.getTokenMetadataAddress(mintAddress);
+      const metadata = await client.program.account.tokenMetadata.fetch(metadataAddress);
 
-      const transaction = new solanaWeb3.Transaction({
-        recentBlockhash: blockhashData.blockhash,
-        feePayer: wallet.publicKey,
-      });
-
-      transaction.add(
-        solanaWeb3.SystemProgram.createAccount({
-          fromPubkey: wallet.publicKey,
-          newAccountPubkey: mintKeypair.publicKey,
-          lamports: rent,
-          space: 82,
-          programId: new solanaWeb3.PublicKey(TOKEN_PROGRAM_ID),
-        })
-      );
-
-      setStatus('⏳ Waiting for wallet signature... (20 sec timeout)');
-      let signed;
-      try {
-        const signPromise = wallet.signTransaction(transaction);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Wallet signature timeout')), 20000)
-        );
-        signed = await Promise.race([signPromise, timeoutPromise]);
-        signed.partialSign(mintKeypair);
-      } catch (walletErr: any) {
-        const errorMsg = walletErr.message || 'User rejected';
-        setStatus(`❌ Wallet sign failed: ${errorMsg}`);
-        return;
-      }
-
-      setStatus('⏳ Sending to network...');
-      let signature;
-      let retries = 0;
-      while (retries < 3) {
-        try {
-          signature = await connection.sendRawTransaction(signed.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-            maxRetries: 3,
-          });
-          break;
-        } catch (sendErr: any) {
-          retries++;
-          if (retries < 3 && sendErr.message?.includes('blockhash')) {
-            setStatus('⏳ Retrying transaction with fresh blockhash...');
-            continue;
-          }
-          throw sendErr;
-        }
-      }
-
-      setStatus('⏳ Waiting for confirmation...');
-      const confirmation = await connection.confirmTransaction(
-        {
-          signature,
-          blockhash: blockhashData.blockhash,
-          lastValidBlockHeight: blockhashData.lastValidBlockHeight,
-        },
-        'confirmed'
-      );
-
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
-      }
-
+      // Save to deployed tokens
       const newTokens = [
         ...deployedTokens,
         {
-          mint: mintKeypair.publicKey.toString(),
+          mint: mintAddress.toString(),
           name: tokenName,
           symbol: tokenSymbol,
           decimals: tokenDecimals,
           totalSupply: tokenSupply,
-          txid: signature,
+          circulatingSupply: metadata.circulatingSupply.toString(),
+          metadataAddress: metadataAddress.toString(),
+          txid: await client.getLastTransaction(),
         },
       ];
       setDeployedTokens(newTokens);
       localStorage.setItem('MAX_deployed', JSON.stringify(newTokens));
 
       setStatus(
-        `✅ Token deployed!<br>📄 Mint: ${mintKeypair.publicKey.toString()}<br>🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Transaction</a>`
+        `✅ Token deployed via MAX DEX!<br>` +
+        `📄 Mint: ${mintAddress.toString()}<br>` +
+        `📋 Metadata: ${metadataAddress.toString()}<br>` +
+        `🔗 <a href="https://explorer.solana.com/address/${mintAddress.toString()}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Token</a>`
       );
     } catch (e: any) {
       setStatus(`❌ ${e.message}`);
@@ -123,7 +102,7 @@ const DeployTokenPage: React.FC = () => {
   return (
     <div className="dex-card">
       <div className="card-header">
-        <span className="card-title">DEPLOY NEW SPL TOKEN</span>
+        <span className="card-title">DEPLOY TOKEN ON MAX DEX</span>
       </div>
 
       <div className="form-row">
@@ -151,10 +130,12 @@ const DeployTokenPage: React.FC = () => {
             type="number"
             value={tokenDecimals}
             onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
+            min="0"
+            max="9"
           />
         </div>
         <div className="form-group">
-          <label>TOTAL SUPPLY</label>
+          <label>TOTAL SUPPLY (in tokens)</label>
           <input
             type="number"
             value={tokenSupply}
@@ -163,8 +144,19 @@ const DeployTokenPage: React.FC = () => {
         </div>
       </div>
 
-      <button className="action-button" onClick={handleDeployToken}>
-        DEPLOY TOKEN
+      {/* Show Initialize DEX button if DEX not ready */}
+      {!dexClient && (
+        <button className="action-button" onClick={initializeDex} style={{ marginBottom: '10px' }}>
+          INITIALIZE DEX FIRST
+        </button>
+      )}
+
+      <button 
+        className="action-button" 
+        onClick={handleDeployToken}
+        disabled={!dexClient && !status.includes('already initialized')}
+      >
+        DEPLOY TOKEN ON MAX DEX
       </button>
 
       <div className="status-area" dangerouslySetInnerHTML={{ __html: status }} />
