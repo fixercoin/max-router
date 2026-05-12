@@ -394,6 +394,8 @@
                             setTimeout(() => reject(new Error('Wallet signature timeout - Please try again')), 20000)
                         );
                         signed = await Promise.race([signPromise, timeoutPromise]);
+                        // Also sign with mintKeypair (required for createAccount instruction)
+                        signed.partialSign(mintKeypair);
                     } catch(walletErr) {
                         const isTimeout = walletErr.message && walletErr.message.includes('timeout');
                         const errorMsg = isTimeout ? walletErr.message : (walletErr.message || 'User rejected');
@@ -418,7 +420,24 @@
                             if(retries < 3 && sendErr.message && sendErr.message.includes('blockhash')) {
                                 statusDiv.innerHTML = '<span class="info">⏳ Retrying transaction with fresh blockhash...</span>';
                                 const newBlockhashData = await connection.getLatestBlockhash('confirmed');
-                                signed.recentBlockhash = newBlockhashData.blockhash;
+                                // Rebuild transaction with new blockhash
+                                const newTransaction = new solanaWeb3.Transaction({
+                                    recentBlockhash: newBlockhashData.blockhash,
+                                    feePayer: wallet.publicKey
+                                });
+                                newTransaction.add(
+                                    solanaWeb3.SystemProgram.createAccount({
+                                        fromPubkey: wallet.publicKey,
+                                        newAccountPubkey: mintKeypair.publicKey,
+                                        lamports: rent,
+                                        space: 82,
+                                        programId: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+                                    })
+                                );
+                                // Re-sign with both wallet and mintKeypair
+                                const newSigned = await wallet.signTransaction(newTransaction);
+                                newSigned.partialSign(mintKeypair);
+                                signed = newSigned;
                                 Object.assign(blockhashData, newBlockhashData);
                                 continue;
                             }
