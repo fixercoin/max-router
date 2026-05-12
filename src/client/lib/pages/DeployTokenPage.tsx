@@ -9,8 +9,8 @@ const DeployTokenPage: React.FC = () => {
   const [tokenName, setTokenName] = useState('MAX Token');
   const [tokenSymbol, setTokenSymbol] = useState('MAX');
   const [tokenDecimals, setTokenDecimals] = useState(6);
+  const [tokenSupply, setTokenSupply] = useState(10000000); // ADD THIS LINE
   const [status, setStatus] = useState('⚡ Ready — Solana Devnet');
-  const [dexState, setDexState] = useState<any>(null);
 
   // Initialize DEX first
   const initializeDex = async () => {
@@ -61,7 +61,7 @@ const DeployTokenPage: React.FC = () => {
       setStatus('⏳ Deploying token via MAX DEX program...');
       const mintAddress = await client.deployToken(tokenName, tokenSymbol, tokenDecimals);
       
-      // Mint initial supply (6 decimals: 10,000,000 = 10 tokens)
+      // Mint initial supply (convert to raw amount with decimals)
       const initialSupply = tokenSupply * Math.pow(10, tokenDecimals);
       setStatus('⏳ Minting initial supply...');
       await client.mintTokens(mintAddress, initialSupply);
@@ -81,7 +81,6 @@ const DeployTokenPage: React.FC = () => {
           totalSupply: tokenSupply,
           circulatingSupply: metadata.circulatingSupply.toString(),
           metadataAddress: metadataAddress.toString(),
-          txid: await client.getLastTransaction(),
         },
       ];
       setDeployedTokens(newTokens);
@@ -91,8 +90,16 @@ const DeployTokenPage: React.FC = () => {
         `✅ Token deployed via MAX DEX!<br>` +
         `📄 Mint: ${mintAddress.toString()}<br>` +
         `📋 Metadata: ${metadataAddress.toString()}<br>` +
-        `🔗 <a href="https://explorer.solana.com/address/${mintAddress.toString()}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Token</a>`
+        `💰 Supply: ${tokenSupply.toLocaleString()} ${tokenSymbol}<br>` +
+        `🔗 <a href="https://explorer.solana.com/address/${mintAddress.toString()}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Token on Explorer</a>`
       );
+      
+      // Reset form
+      setTokenName('MAX Token');
+      setTokenSymbol('MAX');
+      setTokenDecimals(6);
+      setTokenSupply(10000000);
+      
     } catch (e: any) {
       setStatus(`❌ ${e.message}`);
       console.error('Deployment error:', e);
@@ -140,6 +147,7 @@ const DeployTokenPage: React.FC = () => {
             type="number"
             value={tokenSupply}
             onChange={(e) => setTokenSupply(parseInt(e.target.value))}
+            min="1"
           />
         </div>
       </div>
