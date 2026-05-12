@@ -365,6 +365,7 @@
                     const mintKeypair = solanaWeb3.Keypair.generate();
                     const rent = await connection.getMinimumBalanceForRentExemption(82);
 
+                    // Get fresh blockhash right before signing
                     statusDiv.innerHTML = '<span class="info">⏳ Getting fresh blockhash...</span>';
                     const blockhashData = await connection.getLatestBlockhash('confirmed');
 
@@ -384,13 +385,19 @@
                         })
                     );
 
-                    // Wait and sign transaction
-                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for wallet signature... (Please open wallet if not visible)</span>';
+                    // Wait and sign transaction with 20 second timeout
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for wallet signature... (20 sec timeout)</span>';
                     let signed;
                     try {
-                        signed = await wallet.signTransaction(transaction);
+                        const signPromise = wallet.signTransaction(transaction);
+                        const timeoutPromise = new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('Wallet signature timeout - Please try again')), 20000)
+                        );
+                        signed = await Promise.race([signPromise, timeoutPromise]);
                     } catch(walletErr) {
-                        statusDiv.innerHTML = `<span class="error">❌ Wallet sign failed: ${walletErr.message || 'User rejected'}</span>`;
+                        const isTimeout = walletErr.message && walletErr.message.includes('timeout');
+                        const errorMsg = isTimeout ? walletErr.message : (walletErr.message || 'User rejected');
+                        statusDiv.innerHTML = `<span class="error">❌ Wallet sign failed: ${errorMsg}</span>`;
                         return;
                     }
 
