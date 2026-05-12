@@ -374,7 +374,7 @@
                     
                     // Get fresh blockhash with proper commitment
                     statusDiv.innerHTML = '<span class="info">⏳ Getting blockhash...</span>';
-                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
                     
                     transaction.recentBlockhash = blockhash;
                     transaction.feePayer = wallet.publicKey;
@@ -390,30 +390,14 @@
                         preflightCommitment: 'confirmed'
                     });
                     
-                    // Wait for confirmation with retry
+                    // Wait for confirmation
                     statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
-                    
-                    let confirmed = false;
-                    let attempts = 0;
-                    
-                    while (!confirmed && attempts < 15) {
-                        const status = await connection.getSignatureStatus(signature);
-                        if (status.value && status.value.confirmationStatus) {
-                            confirmed = true;
-                            break;
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        attempts++;
-                    }
-                    
-                    if (!confirmed) {
-                        // Try one more confirmation method
-                        await connection.confirmTransaction({
-                            signature: signature,
-                            blockhash: blockhash,
-                            lastValidBlockHeight: lastValidBlockHeight
-                        });
-                    }
+
+                    await connection.confirmTransaction({
+                        signature: signature,
+                        blockhash: blockhash,
+                        lastValidBlockHeight: lastValidBlockHeight
+                    }, 'confirmed');
                     
                     // Save token data
                     deployedTokens.push({ 
