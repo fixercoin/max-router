@@ -254,8 +254,8 @@
             <div id="poolsPanel" class="panel" style="display: none;">
                 <div class="card-title" style="margin-bottom: 20px;">CREATE LIQUIDITY POOL</div>
                 <div class="form-row">
-                    <div class="form-group"><label>TOKEN A (MINT)</label><input type="text" id="poolTokenA" placeholder="Token mint address"></div>
-                    <div class="form-group"><label>TOKEN B (MINT)</label><input type="text" id="poolTokenB" placeholder="Token mint address"></div>
+                    <div class="form-group"><label>TOKEN A (MINT)</label><input type="text" id="poolTokenA" placeholder="Your token mint address"></div>
+                    <div class="form-group"><label>TOKEN B (USDC DEVNET)</label><input type="text" id="poolTokenB" placeholder="USDC Devnet" readonly></div>
                     <div class="form-group"><label>FEE (BPS)</label><input type="number" id="poolFee" value="30"></div>
                 </div>
                 <button class="action-button" id="createPoolBtn">CREATE POOL</button>
@@ -299,6 +299,7 @@
     <script>
         (function(){
             const connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+            const USDC_DEVNET = 'EPjFWaLb3hyccqJ1yckQWNufZi8MWYrrT4yfzJstd6M';
             let wallet = null;
             let deployedTokens = [];
             let pools = [];
@@ -591,6 +592,11 @@
                 Object.values(panels).forEach(p => { if(p) p.style.display = 'none'; });
                 const active = panels[e.target.value];
                 if(active) active.style.display = 'block';
+
+                // Auto-populate USDC when pools panel is shown
+                if(e.target.value === 'pools') {
+                    document.getElementById('poolTokenB').value = USDC_DEVNET;
+                }
             });
 
             // EVENT BINDINGS
