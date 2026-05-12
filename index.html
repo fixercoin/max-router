@@ -366,7 +366,7 @@
                     const rent = await connection.getMinimumBalanceForRentExemption(82);
 
                     statusDiv.innerHTML = '<span class="info">⏳ Getting fresh blockhash...</span>';
-                    let blockhashData = await connection.getLatestBlockhash('finalized');
+                    const blockhashData = await connection.getLatestBlockhash('finalized');
 
                     // Create transaction with fresh blockhash
                     const transaction = new solanaWeb3.Transaction({
@@ -393,11 +393,6 @@
                         statusDiv.innerHTML = `<span class="error">❌ Wallet sign failed: ${walletErr.message || 'User rejected'}</span>`;
                         return;
                     }
-
-                    // Get fresh blockhash right before sending
-                    statusDiv.innerHTML = '<span class="info">⏳ Refreshing blockhash before send...</span>';
-                    blockhashData = await connection.getLatestBlockhash('finalized');
-                    signed.recentBlockhash = blockhashData.blockhash;
 
                     // Send transaction with fresh blockhash
                     statusDiv.innerHTML = '<span class="info">⏳ Sending to network...</span>';
