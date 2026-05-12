@@ -292,18 +292,31 @@
                 <div class="card-title" style="margin-bottom: 20px;">DEPLOYED TOKENS</div>
                 <div id="myTokensArea" class="status-area" style="max-height: 380px;">— No tokens deployed —</div>
             </div>
+
+            <div id="tokenDetailsPanel" class="panel" style="display: none;">
+                <div class="card-header">
+                    <span class="card-title">TOKEN DETAILS</span>
+                    <button id="backToTokensBtn" class="action-button" style="width: auto; margin-top: 0;">← BACK</button>
+                </div>
+                <div id="tokenDetailsContent" class="status-area" style="max-height: 500px; white-space: normal;">— Loading —</div>
+            </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@coral-xyz/anchor@0.29.0/dist/anchor.min.js"></script>
     <script>
         (function(){
             const connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
             const USDC_DEVNET = 'EPjFWaLb3hyccqJ1yckQWNufZi8MWYrrT4yfzJstd6M';
             const SOL_DEVNET = 'So11111111111111111111111111111111111111112';
+            const DEX_PROGRAM_ID = '36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk';
+            const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+
             let wallet = null;
             let deployedTokens = [];
             let pools = [];
+            let selectedTokenForDetails = null;
 
             function loadStorage() {
                 const savedTokens = localStorage.getItem('MAX_deployed');
@@ -335,12 +348,58 @@
                 if(toValue) toSelect.value = toValue;
             }
 
+            async function getTokenMetadata(mint) {
+                try {
+                    const response = await fetch(`https://api.devnet.solana.com`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: 1,
+                            method: 'getTokenSupply',
+                            params: [mint]
+                        })
+                    });
+                    const data = await response.json();
+                    if(data.result) return data.result.value;
+                    return null;
+                } catch(e) { console.error('Metadata fetch failed:', e); return null; }
+            }
+
+            async function getTokenHolders(mint) {
+                try {
+                    const response = await fetch(`https://api.devnet.solana.com`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: 1,
+                            method: 'getProgramAccounts',
+                            params: [
+                                TOKEN_PROGRAM_ID,
+                                {
+                                    encoding: 'jsonParsed',
+                                    filters: [
+                                        { dataSize: 165 },
+                                        { memcmp: { offset: 0, bytes: mint } }
+                                    ]
+                                }
+                            ]
+                        })
+                    });
+                    const data = await response.json();
+                    if(data.result) return data.result;
+                    return [];
+                } catch(e) { console.error('Holders fetch failed:', e); return []; }
+            }
+
             function refreshMyTokensUI() {
                 const container = document.getElementById('myTokensArea');
                 if(!container) return;
                 if(!deployedTokens.length) { container.innerHTML = '— No tokens deployed —'; return; }
-                container.innerHTML = deployedTokens.map(t => `<div class="list-item"><span><b>${t.symbol}</b> / ${t.name}<br><span class="addr">${t.mint.slice(0,28)}…</span></span><button class="copy-mini" data-mint="${t.mint}">📋 COPY</button></div>`).join('');
+                container.innerHTML = deployedTokens.map(t => `<div class="list-item"><span><b>${t.symbol}</b> / ${t.name}<br><span style="font-size:11px; color:#6C809C;">${t.mint.slice(0,28)}…</span></span><div style="display:flex; gap:8px;"><button class="copy-mini" data-mint="${t.mint}">📋 COPY</button><button class="copy-mini view-details" data-mint="${t.mint}" style="cursor:pointer; color:#6C9BD2;">👁 VIEW</button></div></div>`).join('');
                 document.querySelectorAll('.copy-mini').forEach(btn => btn.addEventListener('click', (e) => { navigator.clipboard.writeText(btn.dataset.mint); alert('Mint copied'); }));
+                document.querySelectorAll('.view-details').forEach(btn => btn.addEventListener('click', (e) => { showTokenDetails(btn.dataset.mint); }));
             }
 
             function refreshPoolsUI() {
@@ -508,48 +567,211 @@
                 }
             }
 
-            function createPool() {
+            async function createPool() {
+                if(!wallet) { alert('Connect wallet'); return; }
+
                 const tokenA = document.getElementById('poolTokenA').value.trim();
                 const tokenB = document.getElementById('poolTokenB').value.trim();
                 const fee = parseInt(document.getElementById('poolFee').value);
+                const statusDiv = document.getElementById('createPoolStatus');
+
                 if(!tokenA || !tokenB) { alert('Enter token mint addresses'); return; }
+                if(!solanaWeb3.PublicKey.isOnCurve(tokenA) || !solanaWeb3.PublicKey.isOnCurve(tokenB)) { alert('Invalid token addresses'); return; }
 
-                const tokenAData = deployedTokens.find(t => t.mint === tokenA);
-                const tokenBData = deployedTokens.find(t => t.mint === tokenB);
-                const symbolA = tokenAData ? tokenAData.symbol : tokenA.slice(0,6);
-                const symbolB = tokenBData ? tokenBData.symbol : tokenB.slice(0,6);
+                statusDiv.innerHTML = '<span class="info">⏳ Creating pool on DEX program...</span>';
 
-                pools.push({ tokenA, tokenB, symbolA, symbolB, fee, reserveA: 0, reserveB: 0, totalLp: 0 });
-                savePools();
-                document.getElementById('createPoolStatus').innerHTML = `<span class="success">✅ Pool created: ${symbolA}/${symbolB} | fee: ${fee/100}%</span>`;
-                document.getElementById('poolTokenA').value = '';
-                document.getElementById('poolTokenB').value = '';
+                try {
+                    const poolKeypair = solanaWeb3.Keypair.generate();
+                    const blockhashData = await connection.getLatestBlockhash('confirmed');
+
+                    const transaction = new solanaWeb3.Transaction({
+                        recentBlockhash: blockhashData.blockhash,
+                        feePayer: wallet.publicKey
+                    });
+
+                    // Construct createPool instruction
+                    const createPoolIx = new solanaWeb3.TransactionInstruction({
+                        programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
+                        keys: [
+                            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+                            { pubkey: poolKeypair.publicKey, isSigner: true, isWritable: true },
+                            { pubkey: new solanaWeb3.PublicKey(tokenA), isSigner: false, isWritable: false },
+                            { pubkey: new solanaWeb3.PublicKey(tokenB), isSigner: false, isWritable: false },
+                            { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
+                        ],
+                        data: Buffer.concat([
+                            Buffer.from([0]), // createPool instruction index
+                            Buffer.from(new Uint16Array([fee]).buffer)
+                        ])
+                    });
+
+                    transaction.add(createPoolIx);
+                    transaction.partialSign(poolKeypair);
+
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for wallet signature...</span>';
+                    const signed = await wallet.signTransaction(transaction);
+
+                    statusDiv.innerHTML = '<span class="info">⏳ Sending transaction...</span>';
+                    const signature = await connection.sendRawTransaction(signed.serialize());
+
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
+                    await connection.confirmTransaction({
+                        signature: signature,
+                        blockhash: blockhashData.blockhash,
+                        lastValidBlockHeight: blockhashData.lastValidBlockHeight
+                    }, 'confirmed');
+
+                    const tokenAData = deployedTokens.find(t => t.mint === tokenA);
+                    const tokenBData = deployedTokens.find(t => t.mint === tokenB);
+                    const symbolA = tokenAData ? tokenAData.symbol : tokenA.slice(0,6);
+                    const symbolB = tokenBData ? tokenBData.symbol : tokenB.slice(0,6);
+
+                    pools.push({
+                        tokenA, tokenB, symbolA, symbolB, fee,
+                        poolAddress: poolKeypair.publicKey.toString(),
+                        txid: signature,
+                        reserveA: 0, reserveB: 0, totalLp: 0
+                    });
+                    savePools();
+
+                    statusDiv.innerHTML = `<span class="success">✅ Pool created: ${symbolA}/${symbolB} | fee: ${fee/100}%<br>🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Tx</a></span>`;
+                    document.getElementById('poolTokenA').value = '';
+                    document.getElementById('poolTokenB').value = '';
+                } catch(e) {
+                    statusDiv.innerHTML = `<span class="error">❌ Pool creation failed: ${e.message}</span>`;
+                    console.error('Pool creation error:', e);
+                }
             }
 
-            function addLiquidity() {
+            async function addLiquidity() {
+                if(!wallet) { alert('Connect wallet'); return; }
+
                 const idx = document.getElementById('poolSelectDropdown').value;
                 const amount = parseFloat(document.getElementById('addLiquidityAmount').value);
-                if(idx === '' || isNaN(amount)) { alert('Select pool & amount'); return; }
+                const statusDiv = document.getElementById('liquidityStatus');
+
+                if(idx === '' || isNaN(amount) || amount <= 0) { alert('Select valid pool & amount'); return; }
+
                 const pool = pools[parseInt(idx)];
-                const lpTokens = pool.totalLp === 0 ? Math.sqrt(amount*amount) : (amount / (pool.reserveA||1)) * pool.totalLp;
-                pool.reserveA += amount; pool.reserveB += amount; pool.totalLp += lpTokens;
-                savePools();
-                document.getElementById('liquidityStatus').innerHTML = `<span class="success">➕ Added ${amount} → ${lpTokens.toFixed(6)} LP</span>`;
-                document.getElementById('addLiquidityAmount').value = '';
+                if(!pool) { alert('Pool not found'); return; }
+
+                statusDiv.innerHTML = '<span class="info">⏳ Adding liquidity...</span>';
+
+                try {
+                    const blockhashData = await connection.getLatestBlockhash('confirmed');
+                    const transaction = new solanaWeb3.Transaction({
+                        recentBlockhash: blockhashData.blockhash,
+                        feePayer: wallet.publicKey
+                    });
+
+                    // Construct addLiquidity instruction
+                    const addLiquidityIx = new solanaWeb3.TransactionInstruction({
+                        programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
+                        keys: [
+                            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+                            { pubkey: new solanaWeb3.PublicKey(pool.poolAddress), isSigner: false, isWritable: true }
+                        ],
+                        data: Buffer.concat([
+                            Buffer.from([1]), // addLiquidity instruction index
+                            Buffer.from(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer)
+                        ])
+                    });
+
+                    transaction.add(addLiquidityIx);
+
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for wallet signature...</span>';
+                    const signed = await wallet.signTransaction(transaction);
+
+                    statusDiv.innerHTML = '<span class="info">⏳ Sending transaction...</span>';
+                    const signature = await connection.sendRawTransaction(signed.serialize());
+
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
+                    await connection.confirmTransaction({
+                        signature: signature,
+                        blockhash: blockhashData.blockhash,
+                        lastValidBlockHeight: blockhashData.lastValidBlockHeight
+                    }, 'confirmed');
+
+                    const lpTokens = pool.totalLp === 0 ? Math.sqrt(amount*amount) : (amount / (pool.reserveA||1)) * pool.totalLp;
+                    pool.reserveA += amount;
+                    pool.reserveB += amount;
+                    pool.totalLp += lpTokens;
+                    savePools();
+
+                    statusDiv.innerHTML = `<span class="success">✅ Liquidity added: ${amount} → ${lpTokens.toFixed(6)} LP<br>🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Tx</a></span>`;
+                    document.getElementById('addLiquidityAmount').value = '';
+                } catch(e) {
+                    statusDiv.innerHTML = `<span class="error">❌ Add liquidity failed: ${e.message}</span>`;
+                    console.error('Add liquidity error:', e);
+                }
             }
 
-            function removeLiquidity() {
+            async function removeLiquidity() {
+                const statusDiv = document.getElementById('liquidityStatus');
+                statusDiv.innerHTML = '<span class="error">⚠️ Remove liquidity instruction not yet implemented in your DEX program. Once you add the removeLiquidity instruction, this will work.</span>';
+                return;
+
+                // Code below is ready for when removeLiquidity instruction is added to your program
+                /*
+                if(!wallet) { alert('Connect wallet'); return; }
+
                 const idx = document.getElementById('poolSelectDropdown').value;
                 const lpAmount = parseFloat(document.getElementById('removeLpAmount').value);
-                if(idx === '' || isNaN(lpAmount)) return;
+
+                if(idx === '' || isNaN(lpAmount) || lpAmount <= 0) { alert('Select valid pool & amount'); return; }
+
                 const pool = pools[parseInt(idx)];
-                if(lpAmount > pool.totalLp) { alert('Insufficient LP'); return; }
-                const amountA = (lpAmount / pool.totalLp) * pool.reserveA;
-                const amountB = (lpAmount / pool.totalLp) * pool.reserveB;
-                pool.reserveA -= amountA; pool.reserveB -= amountB; pool.totalLp -= lpAmount;
-                savePools();
-                document.getElementById('liquidityStatus').innerHTML = `<span class="success">➖ Removed LP: ${lpAmount} → ${amountA.toFixed(4)} / ${amountB.toFixed(4)}</span>`;
-                document.getElementById('removeLpAmount').value = '';
+                if(!pool) { alert('Pool not found'); return; }
+                if(lpAmount > pool.totalLp) { alert('Insufficient LP tokens'); return; }
+
+                statusDiv.innerHTML = '<span class="info">⏳ Removing liquidity...</span>';
+
+                try {
+                    const blockhashData = await connection.getLatestBlockhash('confirmed');
+                    const transaction = new solanaWeb3.Transaction({
+                        recentBlockhash: blockhashData.blockhash,
+                        feePayer: wallet.publicKey
+                    });
+
+                    // Construct removeLiquidity instruction (update index when available)
+                    const removeLiquidityIx = new solanaWeb3.TransactionInstruction({
+                        programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
+                        keys: [
+                            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+                            { pubkey: new solanaWeb3.PublicKey(pool.poolAddress), isSigner: false, isWritable: true }
+                        ],
+                        data: Buffer.concat([
+                            Buffer.from([2]), // removeLiquidity instruction index - UPDATE THIS
+                            Buffer.from(new BigUint64Array([BigInt(Math.floor(lpAmount * 1e9))]).buffer)
+                        ])
+                    });
+
+                    transaction.add(removeLiquidityIx);
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for wallet signature...</span>';
+                    const signed = await wallet.signTransaction(transaction);
+                    statusDiv.innerHTML = '<span class="info">⏳ Sending transaction...</span>';
+                    const signature = await connection.sendRawTransaction(signed.serialize());
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
+                    await connection.confirmTransaction({
+                        signature: signature,
+                        blockhash: blockhashData.blockhash,
+                        lastValidBlockHeight: blockhashData.lastValidBlockHeight
+                    }, 'confirmed');
+
+                    const amountA = (lpAmount / pool.totalLp) * pool.reserveA;
+                    const amountB = (lpAmount / pool.totalLp) * pool.reserveB;
+                    pool.reserveA -= amountA;
+                    pool.reserveB -= amountB;
+                    pool.totalLp -= lpAmount;
+                    savePools();
+
+                    statusDiv.innerHTML = `<span class="success">✅ Liquidity removed: ${lpAmount} LP → ${amountA.toFixed(4)} / ${amountB.toFixed(4)}<br>🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Tx</a></span>`;
+                    document.getElementById('removeLpAmount').value = '';
+                } catch(e) {
+                    statusDiv.innerHTML = `<span class="error">❌ Remove liquidity failed: ${e.message}</span>`;
+                    console.error('Remove liquidity error:', e);
+                }
+                */
             }
 
             function estimateSwap() {
@@ -567,18 +789,24 @@
             }
 
             async function executeSwap() {
-                if(!wallet) { alert('Connect wallet'); return; }
                 const statusDiv = document.getElementById('swapExecuteStatus');
+                statusDiv.innerHTML = '<span class="error">⚠️ Swap instruction not yet implemented in your DEX program. Once you add the swap instruction, this will work.</span>';
+                return;
+
+                // Code below is ready for when swap instruction is added to your program
+                /*
+                if(!wallet) { alert('Connect wallet'); return; }
+
                 const fromMint = document.getElementById('swapFromMint').value;
                 const toMint = document.getElementById('swapToMint').value;
                 const amount = parseFloat(document.getElementById('swapAmount').value);
 
-                if(!fromMint || !toMint || isNaN(amount)) { statusDiv.innerHTML = '<span class="error">Enter complete swap details</span>'; return; }
+                if(!fromMint || !toMint || isNaN(amount) || amount <= 0) { statusDiv.innerHTML = '<span class="error">Enter complete swap details</span>'; return; }
 
                 const pool = pools.find(p => (p.tokenA === fromMint && p.tokenB === toMint) || (p.tokenA === toMint && p.tokenB === fromMint));
                 if(!pool) { statusDiv.innerHTML = '<span class="error">No pool found for this pair</span>'; return; }
 
-                statusDiv.innerHTML = '<span class="info">⏳ Executing swap on Devnet...</span>';
+                statusDiv.innerHTML = '<span class="info">⏳ Executing swap...</span>';
 
                 try {
                     const isAtoB = pool.tokenA === fromMint;
@@ -586,17 +814,120 @@
                     const reserveOut = isAtoB ? pool.reserveB : pool.reserveA;
                     const amountOut = (amount * (10000 - pool.fee) / 10000 * reserveOut) / (reserveIn + amount * (10000 - pool.fee) / 10000);
 
+                    const blockhashData = await connection.getLatestBlockhash('confirmed');
+                    const transaction = new solanaWeb3.Transaction({
+                        recentBlockhash: blockhashData.blockhash,
+                        feePayer: wallet.publicKey
+                    });
+
+                    // Construct swap instruction (update index and accounts when available)
+                    const swapIx = new solanaWeb3.TransactionInstruction({
+                        programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
+                        keys: [
+                            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+                            { pubkey: new solanaWeb3.PublicKey(pool.poolAddress), isSigner: false, isWritable: true },
+                            { pubkey: new solanaWeb3.PublicKey(fromMint), isSigner: false, isWritable: false },
+                            { pubkey: new solanaWeb3.PublicKey(toMint), isSigner: false, isWritable: false }
+                        ],
+                        data: Buffer.concat([
+                            Buffer.from([3]), // swap instruction index - UPDATE THIS
+                            Buffer.from(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer)
+                        ])
+                    });
+
+                    transaction.add(swapIx);
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for wallet signature...</span>';
+                    const signed = await wallet.signTransaction(transaction);
+                    statusDiv.innerHTML = '<span class="info">⏳ Sending swap transaction...</span>';
+                    const signature = await connection.sendRawTransaction(signed.serialize());
+                    statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
+                    await connection.confirmTransaction({
+                        signature: signature,
+                        blockhash: blockhashData.blockhash,
+                        lastValidBlockHeight: blockhashData.lastValidBlockHeight
+                    }, 'confirmed');
+
                     pool.reserveA += isAtoB ? amount : -amountOut;
                     pool.reserveB += isAtoB ? -amountOut : amount;
                     savePools();
 
-                    statusDiv.innerHTML = `<span class="success">✅ Swap executed on Devnet | Sent: ${amount} | Received: ${amountOut.toFixed(6)}</span>`;
+                    statusDiv.innerHTML = `<span class="success">✅ Swap executed! Sent: ${amount} | Received: ${amountOut.toFixed(6)}<br>🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Tx</a></span>`;
                     document.getElementById('swapFromMint').value = '';
                     document.getElementById('swapToMint').value = '';
                     document.getElementById('swapAmount').value = '';
                     document.getElementById('swapResultArea').innerHTML = '↻ Swap cleared — enter new pair';
                 } catch(e) {
                     statusDiv.innerHTML = `<span class="error">❌ Swap failed: ${e.message}</span>`;
+                    console.error('Swap error:', e);
+                }
+                */
+            }
+
+            async function showTokenDetails(mint) {
+                selectedTokenForDetails = mint;
+                const tokenData = deployedTokens.find(t => t.mint === mint);
+                const detailsPanel = document.getElementById('tokenDetailsPanel');
+                const detailsContent = document.getElementById('tokenDetailsContent');
+
+                const panels = {
+                    deploy: document.getElementById('deployPanel'),
+                    pools: document.getElementById('poolsPanel'),
+                    swap: document.getElementById('swapPanel'),
+                    tokens: document.getElementById('tokensPanel'),
+                    details: detailsPanel
+                };
+                Object.values(panels).forEach(p => { if(p) p.style.display = 'none'; });
+                detailsPanel.style.display = 'block';
+
+                detailsContent.innerHTML = '<span class="info">⏳ Loading token details...</span>';
+
+                try {
+                    const supply = await getTokenMetadata(mint);
+                    const holders = await getTokenHolders(mint);
+
+                    let html = `<div style="padding: 8px; color: #E6EDF5;">`;
+                    if(tokenData) {
+                        html += `<div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #232A36;">`;
+                        html += `<div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">${tokenData.symbol} - ${tokenData.name}</div>`;
+                        html += `<div style="font-size: 11px; color: #8E9BAE; word-break: break-all; margin-bottom: 8px;">🔑 ${mint}</div>`;
+                        html += `<div style="font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">`;
+                        html += `<div><span style="color: #A0AEC0;">Decimals:</span> <span style="color: #6FCF97;">${tokenData.decimals}</span></div>`;
+                        html += `<div><span style="color: #A0AEC0;">Initial Supply:</span> <span style="color: #6FCF97;">${(tokenData.totalSupply / Math.pow(10, tokenData.decimals)).toLocaleString()}</span></div>`;
+                        html += `</div></div>`;
+                    }
+
+                    if(supply) {
+                        html += `<div style="margin-bottom: 16px; padding: 12px; background: #0A0E15; border-radius: 12px; border: 1px solid #1E2A3A;">`;
+                        html += `<div style="font-size: 12px; font-weight: 600; color: #6C9BD2; margin-bottom: 8px;">📊 Current On-Chain Supply</div>`;
+                        html += `<div style="font-size: 13px; color: #E6EDF5;">${(supply.amount / Math.pow(10, supply.decimals)).toLocaleString()} ${tokenData?.symbol || 'tokens'}</div>`;
+                        html += `<div style="font-size: 11px; color: #8E9BAE; margin-top: 4px;">Decimals: ${supply.decimals}</div>`;
+                        html += `</div>`;
+                    }
+
+                    html += `<div style="margin-bottom: 16px; padding: 12px; background: #0A0E15; border-radius: 12px; border: 1px solid #1E2A3A;">`;
+                    html += `<div style="font-size: 12px; font-weight: 600; color: #6C9BD2; margin-bottom: 8px;">👥 Token Holders (${holders.length})</div>`;
+                    if(holders.length > 0) {
+                        html += holders.slice(0, 10).map((h, i) => {
+                            const parsed = h.account.data.parsed?.info;
+                            const amount = parsed?.tokenAmount?.uiAmount || 0;
+                            const addr = h.pubkey.slice(0, 8);
+                            return `<div style="font-size: 11px; padding: 6px; background: #0C111A; border-radius: 8px; margin-bottom: 4px; display: flex; justify-content: space-between;"><span>${i+1}. ${addr}…</span><span style="color: #6FCF97;">${amount.toLocaleString()}</span></div>`;
+                        }).join('');
+                        if(holders.length > 10) html += `<div style="font-size: 11px; color: #8E9BAE; text-align: center; margin-top: 8px;">+${holders.length - 10} more holders</div>`;
+                    } else {
+                        html += `<div style="font-size: 11px; color: #8E9BAE;">No holders found</div>`;
+                    }
+                    html += `</div>`;
+
+                    html += `<div style="font-size: 11px; color: #8E9BAE; padding-top: 12px; border-top: 1px solid #232A36;">`;
+                    html += `<div style="margin-bottom: 6px;">📈 Trade History: Coming soon</div>`;
+                    html += `<div style="margin-bottom: 6px;">💧 Liquidity Volume: Coming soon (integrate your DEX pool data)</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+
+                    detailsContent.innerHTML = html;
+                } catch(e) {
+                    detailsContent.innerHTML = `<span class="error">❌ Failed to load details: ${e.message}</span>`;
                 }
             }
 
@@ -617,6 +948,11 @@
                 if(e.target.value === 'pools') {
                     document.getElementById('poolTokenB').value = USDC_DEVNET;
                 }
+            });
+
+            document.getElementById('backToTokensBtn').addEventListener('click', () => {
+                document.getElementById('tokenDetailsPanel').style.display = 'none';
+                document.getElementById('tokensPanel').style.display = 'block';
             });
 
             // EVENT BINDINGS
