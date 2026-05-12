@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageType } from '../../App';
+import { MaxDexClient } from '../lib/maxDexClient';
 
 export interface AppContextType {
   wallet: any;
@@ -12,6 +13,9 @@ export interface AppContextType {
   setCurrentPage: (page: PageType) => void;
   selectedTokenForDetails: string | null;
   setSelectedTokenForDetails: (mint: string | null) => void;
+  // ADD THESE:
+  dexClient: MaxDexClient | null;
+  setDexClient: (client: MaxDexClient | null) => void;
 }
 
 export const AppContext = React.createContext<AppContextType | undefined>(undefined);
