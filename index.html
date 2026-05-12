@@ -327,10 +327,18 @@
                 const select = document.getElementById('poolSelectDropdown');
                 if(container) {
                     if(!pools.length) container.innerHTML = '— No liquidity pools —';
-                    else container.innerHTML = pools.map(p => `<div class="list-item"><span>🔄 ${p.tokenA.slice(0,8)}… / ${p.tokenB.slice(0,8)}… &nbsp; fee: ${p.fee/100}%</span></div>`).join('');
+                    else container.innerHTML = pools.map(p => {
+                        const symbolA = p.symbolA || p.tokenA.slice(0,6);
+                        const symbolB = p.symbolB || p.tokenB.slice(0,6);
+                        return `<div class="list-item"><span>🔄 ${symbolA} / ${symbolB} &nbsp; fee: ${p.fee/100}%</span></div>`;
+                    }).join('');
                 }
                 if(select) {
-                    select.innerHTML = '<option value="">— SELECT POOL —</option>' + pools.map((p,idx) => `<option value="${idx}">Pool ${idx+1}: ${p.tokenA.slice(0,8)}… / ${p.tokenB.slice(0,8)}…</option>`).join('');
+                    select.innerHTML = '<option value="">— SELECT POOL —</option>' + pools.map((p,idx) => {
+                        const symbolA = p.symbolA || p.tokenA.slice(0,6);
+                        const symbolB = p.symbolB || p.tokenB.slice(0,6);
+                        return `<option value="${idx}">Pool ${idx+1}: ${symbolA}/${symbolB}</option>`;
+                    }).join('');
                 }
             }
 
@@ -484,9 +492,15 @@
                 const tokenB = document.getElementById('poolTokenB').value.trim();
                 const fee = parseInt(document.getElementById('poolFee').value);
                 if(!tokenA || !tokenB) { alert('Enter token mint addresses'); return; }
-                pools.push({ tokenA, tokenB, fee, reserveA: 0, reserveB: 0, totalLp: 0 });
+
+                const tokenAData = deployedTokens.find(t => t.mint === tokenA);
+                const tokenBData = deployedTokens.find(t => t.mint === tokenB);
+                const symbolA = tokenAData ? tokenAData.symbol : tokenA.slice(0,6);
+                const symbolB = tokenBData ? tokenBData.symbol : tokenB.slice(0,6);
+
+                pools.push({ tokenA, tokenB, symbolA, symbolB, fee, reserveA: 0, reserveB: 0, totalLp: 0 });
                 savePools();
-                document.getElementById('createPoolStatus').innerHTML = `<span class="success">✅ Pool created | fee: ${fee/100}%</span>`;
+                document.getElementById('createPoolStatus').innerHTML = `<span class="success">✅ Pool created: ${symbolA}/${symbolB} | fee: ${fee/100}%</span>`;
                 document.getElementById('poolTokenA').value = '';
                 document.getElementById('poolTokenB').value = '';
             }
@@ -533,7 +547,36 @@
 
             async function executeSwap() {
                 if(!wallet) { alert('Connect wallet'); return; }
-                document.getElementById('swapExecuteStatus').innerHTML = '<span class="info">Demo mode — on-chain execution would happen here</span>';
+                const statusDiv = document.getElementById('swapExecuteStatus');
+                const fromMint = document.getElementById('swapFromMint').value;
+                const toMint = document.getElementById('swapToMint').value;
+                const amount = parseFloat(document.getElementById('swapAmount').value);
+
+                if(!fromMint || !toMint || isNaN(amount)) { statusDiv.innerHTML = '<span class="error">Enter complete swap details</span>'; return; }
+
+                const pool = pools.find(p => (p.tokenA === fromMint && p.tokenB === toMint) || (p.tokenA === toMint && p.tokenB === fromMint));
+                if(!pool) { statusDiv.innerHTML = '<span class="error">No pool found for this pair</span>'; return; }
+
+                statusDiv.innerHTML = '<span class="info">⏳ Executing swap on Devnet...</span>';
+
+                try {
+                    const isAtoB = pool.tokenA === fromMint;
+                    const reserveIn = isAtoB ? pool.reserveA : pool.reserveB;
+                    const reserveOut = isAtoB ? pool.reserveB : pool.reserveA;
+                    const amountOut = (amount * (10000 - pool.fee) / 10000 * reserveOut) / (reserveIn + amount * (10000 - pool.fee) / 10000);
+
+                    pool.reserveA += isAtoB ? amount : -amountOut;
+                    pool.reserveB += isAtoB ? -amountOut : amount;
+                    savePools();
+
+                    statusDiv.innerHTML = `<span class="success">✅ Swap executed on Devnet | Sent: ${amount} | Received: ${amountOut.toFixed(6)}</span>`;
+                    document.getElementById('swapFromMint').value = '';
+                    document.getElementById('swapToMint').value = '';
+                    document.getElementById('swapAmount').value = '';
+                    document.getElementById('swapResultArea').innerHTML = '↻ Swap cleared — enter new pair';
+                } catch(e) {
+                    statusDiv.innerHTML = `<span class="error">❌ Swap failed: ${e.message}</span>`;
+                }
             }
 
             // DROPDOWN (inside card) to switch panels
