@@ -366,7 +366,7 @@
                     const rent = await connection.getMinimumBalanceForRentExemption(82);
 
                     statusDiv.innerHTML = '<span class="info">⏳ Getting fresh blockhash...</span>';
-                    const blockhashData = await connection.getLatestBlockhash('finalized');
+                    const blockhashData = await connection.getLatestBlockhash('confirmed');
 
                     // Create transaction with fresh blockhash
                     const transaction = new solanaWeb3.Transaction({
@@ -394,13 +394,30 @@
                         return;
                     }
 
-                    // Send transaction with fresh blockhash
+                    // Send transaction - get fresh blockhash right before sending
                     statusDiv.innerHTML = '<span class="info">⏳ Sending to network...</span>';
-                    const signature = await connection.sendRawTransaction(signed.serialize(), {
-                        skipPreflight: false,
-                        preflightCommitment: 'finalized',
-                        maxRetries: 5
-                    });
+                    let signature;
+                    let retries = 0;
+                    while(retries < 3) {
+                        try {
+                            signature = await connection.sendRawTransaction(signed.serialize(), {
+                                skipPreflight: false,
+                                preflightCommitment: 'confirmed',
+                                maxRetries: 3
+                            });
+                            break;
+                        } catch(sendErr) {
+                            retries++;
+                            if(retries < 3 && sendErr.message && sendErr.message.includes('blockhash')) {
+                                statusDiv.innerHTML = '<span class="info">⏳ Retrying transaction with fresh blockhash...</span>';
+                                const newBlockhashData = await connection.getLatestBlockhash('confirmed');
+                                signed.recentBlockhash = newBlockhashData.blockhash;
+                                Object.assign(blockhashData, newBlockhashData);
+                                continue;
+                            }
+                            throw sendErr;
+                        }
+                    }
 
                     // Wait for confirmation
                     statusDiv.innerHTML = '<span class="info">⏳ Waiting for confirmation...</span>';
@@ -408,7 +425,7 @@
                         signature: signature,
                         blockhash: blockhashData.blockhash,
                         lastValidBlockHeight: blockhashData.lastValidBlockHeight
-                    }, 'finalized');
+                    }, 'confirmed');
 
                     if(confirmation.value.err) {
                         throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
