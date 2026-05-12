@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { getTokenMetadata, getTokenHolders } from '../lib/solanaService';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { MaxDexClient } from '../lib/maxDexClient';
 import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
-  const { deployedTokens, setCurrentPage, selectedTokenForDetails } = useAppContext();
+  const { wallet, deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [supply, setSupply] = useState<any>(null);
   const [holders, setHolders] = useState<any[]>([]);
+  const [programMetadata, setProgramMetadata] = useState<any>(null);
+  const [poolsWithToken, setPoolsWithToken] = useState<any[]>([]);
 
   useEffect(() => {
     loadTokenDetails();
-  }, [selectedTokenForDetails]);
+    loadProgramMetadata();
+    findPoolsWithToken();
+  }, [selectedTokenForDetails, dexClient]);
 
   const loadTokenDetails = async () => {
     if (!selectedTokenForDetails) return;
@@ -28,6 +34,29 @@ const TokenDetailsPage: React.FC = () => {
     }
 
     setLoading(false);
+  };
+
+  // NEW: Load metadata from your MAX DEX program
+  const loadProgramMetadata = async () => {
+    if (!dexClient || !selectedTokenForDetails) return;
+    
+    try {
+      const mintPubkey = new PublicKey(selectedTokenForDetails);
+      const metadataAddress = await dexClient.getTokenMetadataAddress(mintPubkey);
+      const metadata = await dexClient.program.account.tokenMetadata.fetch(metadataAddress);
+      setProgramMetadata(metadata);
+    } catch (e) {
+      console.log("No program metadata found (token not deployed via MAX DEX)");
+    }
+  };
+
+  // NEW: Find pools containing this token
+  const findPoolsWithToken = async () => {
+    const { pools } = useAppContext();
+    const tokenPools = pools.filter(
+      (p) => p.tokenA === selectedTokenForDetails || p.tokenB === selectedTokenForDetails
+    );
+    setPoolsWithToken(tokenPools);
   };
 
   const tokenData = deployedTokens.find((t) => t.mint === selectedTokenForDetails);
@@ -53,15 +82,52 @@ const TokenDetailsPage: React.FC = () => {
           '⏳ Loading token details...'
         ) : (
           <div style={{ padding: '8px', color: '#E6EDF5' }}>
+            {/* Basic Token Info */}
             {tokenData && (
               <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #232A36' }}>
                 <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                   {tokenData.symbol} - {tokenData.name}
                 </div>
                 <div style={{ fontSize: '11px', color: '#8E9BAE', wordBreak: 'break-all', marginBottom: '8px' }}>
-                  🔑 {selectedTokenForDetails}
+                  🔑 Mint: {selectedTokenForDetails}
                 </div>
-                <div style={{ fontSize: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                
+                {/* MAX DEX Program Metadata */}
+                {programMetadata && (
+                  <div style={{ marginTop: '8px', padding: '8px', background: '#0A0E15', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '11px', color: '#6C9BD2', marginBottom: '4px' }}>
+                      ✓ MAX DEX Verified Token
+                    </div>
+                    <div style={{ fontSize: '11px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <span style={{ color: '#A0AEC0' }}>Creator:</span>{' '}
+                        <span style={{ color: '#6FCF97', fontSize: '10px' }}>
+                          {programMetadata.creator.toString().slice(0, 12)}...
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: '#A0AEC0' }}>Verified:</span>{' '}
+                        <span style={{ color: programMetadata.isVerified ? '#6FCF97' : '#F59E0B' }}>
+                          {programMetadata.isVerified ? '✓ Yes' : 'Pending'}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: '#A0AEC0' }}>Total Supply:</span>{' '}
+                        <span style={{ color: '#6FCF97' }}>
+                          {(programMetadata.totalSupply / Math.pow(10, tokenData.decimals)).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: '#A0AEC0' }}>Circulating:</span>{' '}
+                        <span style={{ color: '#6FCF97' }}>
+                          {(programMetadata.circulatingSupply / Math.pow(10, tokenData.decimals)).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div style={{ fontSize: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
                   <div>
                     <span style={{ color: '#A0AEC0' }}>Decimals:</span>{' '}
                     <span style={{ color: '#6FCF97' }}>{tokenData.decimals}</span>
@@ -76,6 +142,7 @@ const TokenDetailsPage: React.FC = () => {
               </div>
             )}
 
+            {/* On-Chain Supply */}
             {supply && (
               <div style={{ marginBottom: '16px', padding: '12px', background: '#0A0E15', borderRadius: '12px', border: '1px solid #1E2A3A' }}>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#6C9BD2', marginBottom: '8px' }}>
@@ -90,6 +157,23 @@ const TokenDetailsPage: React.FC = () => {
               </div>
             )}
 
+            {/* Pools with this token - NEW */}
+            {poolsWithToken.length > 0 && (
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#0A0E15', borderRadius: '12px', border: '1px solid #1E2A3A' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#6C9BD2', marginBottom: '8px' }}>
+                  💧 Liquidity Pools
+                </div>
+                {poolsWithToken.map((pool, idx) => (
+                  <div key={idx} style={{ fontSize: '11px', marginBottom: '8px', padding: '6px', background: '#0C111A', borderRadius: '6px' }}>
+                    <div>Pool: {pool.symbolA}/{pool.symbolB}</div>
+                    <div>Fee: {pool.fee / 100}%</div>
+                    <div>Liquidity: {(pool.reserveA / 1e6).toFixed(2)} {pool.symbolA} / {(pool.reserveB / 1e6).toFixed(2)} {pool.symbolB}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Token Holders */}
             <div style={{ marginBottom: '16px', padding: '12px', background: '#0A0E15', borderRadius: '12px', border: '1px solid #1E2A3A' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: '#6C9BD2', marginBottom: '8px' }}>
                 👥 Token Holders ({holders.length})
@@ -129,10 +213,24 @@ const TokenDetailsPage: React.FC = () => {
               )}
             </div>
 
+            {/* Auto-burn info from your program */}
+            {programMetadata?.autoBurnEnabled && (
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#0A0E15', borderRadius: '12px', border: '1px solid #1E2A3A' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#6C9BD2', marginBottom: '8px' }}>
+                  🔥 Auto-Burn Mechanism
+                </div>
+                <div style={{ fontSize: '11px' }}>
+                  <div>Status: <span style={{ color: '#6FCF97' }}>Active</span></div>
+                  <div>Total Burned: {(programMetadata.burnedAmount / Math.pow(10, tokenData?.decimals || 6)).toLocaleString()} {tokenData?.symbol}</div>
+                  <div>End Date: {new Date(programMetadata.autoBurnEndTimestamp * 1000).toLocaleDateString()}</div>
+                </div>
+              </div>
+            )}
+
             <div style={{ fontSize: '11px', color: '#8E9BAE', paddingTop: '12px', borderTop: '1px solid #232A36' }}>
               <div style={{ marginBottom: '6px' }}>📈 Trade History: Coming soon</div>
               <div style={{ marginBottom: '6px' }}>
-                💧 Liquidity Volume: Coming soon (integrate your DEX pool data)
+                💧 Liquidity Volume: Check pool section above
               </div>
             </div>
           </div>
