@@ -278,13 +278,13 @@
             <div id="swapPanel" class="panel" style="display: none;">
                 <div class="card-title" style="margin-bottom: 20px;">SMART SWAP ROUTER</div>
                 <div class="form-row">
-                    <div class="form-group"><label>FROM TOKEN (MINT)</label><input type="text" id="swapFromMint" placeholder="Mint address"></div>
-                    <div class="form-group"><label>TO TOKEN (MINT)</label><input type="text" id="swapToMint" placeholder="Mint address"></div>
+                    <div class="form-group"><label>FROM TOKEN (SYMBOL/MINT)</label><select id="swapFromMint"><option value="">— SELECT TOKEN —</option></select></div>
+                    <div class="form-group"><label>TO TOKEN (SYMBOL/MINT)</label><select id="swapToMint"><option value="">— SELECT TOKEN —</option></select></div>
                     <div class="form-group"><label>AMOUNT</label><input type="number" id="swapAmount" placeholder="0.0"></div>
                 </div>
                 <button class="action-button" id="estimateSwapBtn">ESTIMATE OUTPUT</button>
                 <button class="action-button" id="executeSwapBtn">EXECUTE SWAP</button>
-                <div id="swapResultArea" class="status-area">↻ Enter pair and amount</div>
+                <div id="swapResultArea" class="status-area">↻ Select tokens and amount</div>
                 <div id="swapExecuteStatus" class="status-area"></div>
             </div>
 
@@ -313,8 +313,27 @@
                 refreshPoolsUI();
                 refreshMyTokensUI();
             }
-            function saveTokens() { localStorage.setItem('MAX_deployed', JSON.stringify(deployedTokens)); refreshMyTokensUI(); }
+            function saveTokens() { localStorage.setItem('MAX_deployed', JSON.stringify(deployedTokens)); refreshMyTokensUI(); refreshSwapTokens(); }
             function savePools() { localStorage.setItem('MAX_pools', JSON.stringify(pools)); refreshPoolsUI(); }
+
+            function refreshSwapTokens() {
+                const commonTokens = [
+                    { symbol: 'USDC', mint: USDC_DEVNET },
+                    { symbol: 'SOL', mint: SOL_DEVNET }
+                ];
+                const allTokens = [...deployedTokens, ...commonTokens];
+                const fromSelect = document.getElementById('swapFromMint');
+                const toSelect = document.getElementById('swapToMint');
+
+                const fromValue = fromSelect.value;
+                const toValue = toSelect.value;
+
+                fromSelect.innerHTML = '<option value="">— SELECT TOKEN —</option>' + allTokens.map(t => `<option value="${t.mint}">${t.symbol} (${t.mint.slice(0,8)}…)</option>`).join('');
+                toSelect.innerHTML = '<option value="">— SELECT TOKEN —</option>' + allTokens.map(t => `<option value="${t.mint}">${t.symbol} (${t.mint.slice(0,8)}…)</option>`).join('');
+
+                if(fromValue) fromSelect.value = fromValue;
+                if(toValue) toSelect.value = toValue;
+            }
 
             function refreshMyTokensUI() {
                 const container = document.getElementById('myTokensArea');
@@ -610,6 +629,7 @@
             document.getElementById('executeSwapBtn').onclick = executeSwap;
 
             loadStorage();
+            refreshSwapTokens();
         })();
     </script>
 </body>
