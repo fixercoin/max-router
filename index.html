@@ -2,395 +2,471 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete DEX - With Smart Router</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MAX – Decentralized Exchange</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            background-color: #0B0F1C;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            color: #E6EDF5;
+            padding: 0;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; color: white; margin-bottom: 30px; font-size: 2.5em; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .card {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
+
+        /* FIXED HEADER */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #0B0F1C;
+            border-bottom: 1px solid #1E2A3A;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
         }
-        .card:hover { transform: translateY(-5px); }
-        .card h2 { color: #333; margin-bottom: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
-        input, select, button {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s;
+
+        .brand h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #FFFFFF 0%, #A0AEC0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
         }
-        input:focus, select:focus { outline: none; border-color: #667eea; }
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: bold;
+
+        .connect-wallet {
+            background: #1E293B;
+            border: 1px solid #334155;
+            color: #F1F5F9;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 20px;
+            border-radius: 40px;
             cursor: pointer;
-            border: none;
+            transition: 0.2s;
+            font-family: inherit;
         }
-        button:hover { transform: scale(1.02); opacity: 0.9; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .status {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 10px;
-            margin-top: 15px;
-            font-size: 14px;
-            max-height: 200px;
+
+        .connect-wallet:hover {
+            background: #2D3A4E;
+            border-color: #5B6E8C;
+        }
+
+        .wallet-status {
+            font-size: 11px;
+            color: #8E9BAE;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        /* MAIN CONTAINER – pushes content below fixed header */
+        .main-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 100px 24px 48px 24px;
+        }
+
+        /* CARD */
+        .dex-card {
+            background: #11161F;
+            border: 1px solid #232A36;
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 28px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #232A36;
+        }
+
+        .card-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #8E9BAE;
+        }
+
+        /* DROPDOWN inside card */
+        .mode-select {
+            background: #0B0F1A;
+            border: 1px solid #2A3442;
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #F1F5F9;
+            cursor: pointer;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        label {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 500;
+            color: #A0AEC0;
+            display: block;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        input, select {
+            width: 100%;
+            background: #0B0F1A;
+            border: 1px solid #2A3442;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #F1F5F9;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .action-button {
+            background: #1E2A3A;
+            border: 1px solid #334155;
+            border-radius: 40px;
+            padding: 12px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #F1F5F9;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 8px;
+        }
+
+        .action-button:hover {
+            background: #2D3A4E;
+            border-color: #5B6E8C;
+        }
+
+        .status-area {
+            background: #0A0E15;
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 20px;
+            font-size: 12px;
+            font-family: monospace;
+            color: #A0B2C6;
+            border: 1px solid #1E2A3A;
+            max-height: 180px;
             overflow-y: auto;
         }
-        .success { color: #10b981; }
-        .error { color: #ef4444; }
-        .info { color: #3b82f6; }
-        .wallet-info {
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            text-align: center;
+
+        .list-item {
+            background: #0C111A;
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border: 1px solid #1E2A3A;
         }
-        .balance { font-size: 24px; font-weight: bold; color: #667eea; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-left: 10px;
+
+        .copy-mini {
+            background: none;
+            border: none;
+            color: #6C809C;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 12px;
+        }
+
+        .success { color: #6FCF97; }
+        .error { color: #E07A5F; }
+        .info { color: #6C9BD2; }
+
+        @media (max-width: 760px) {
+            .fixed-header { padding: 12px 20px; }
+            .main-container { padding: 88px 16px 32px 16px; }
+            .card-header { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🦄 Complete DEX with Smart Router</h1>
-        
-        <div class="wallet-info" id="walletInfo">
-            <button id="connectWallet" onclick="connectWallet()">🔌 Connect Phantom Wallet</button>
-            <div id="walletStatus"></div>
+    <!-- FIXED HEADER: only MAX + wallet -->
+    <div class="fixed-header">
+        <div class="brand"><h1>MAX</h1></div>
+        <div style="text-align: right;">
+            <button class="connect-wallet" id="connectWalletBtn">CONNECT WALLET</button>
+            <div class="wallet-status" id="walletStatus"></div>
         </div>
+    </div>
 
-        <div class="grid">
-            <!-- Create Pool Card -->
-            <div class="card">
-                <h2>🏊 Create Pool</h2>
-                <input type="text" id="poolName" placeholder="Pool Name (e.g., SOL/USDC)">
-                <input type="number" id="fee" placeholder="Fee (30 = 0.3%)" value="30">
-                <button onclick="createPool()">Create Liquidity Pool</button>
-                <div id="poolResult" class="status"></div>
+    <div class="main-container">
+        <!-- SINGLE CARD with dropdown mode selector -->
+        <div class="dex-card">
+            <div class="card-header">
+                <span class="card-title">DECENTRALIZED EXCHANGE</span>
+                <select id="modeSelect" class="mode-select">
+                    <option value="deploy">DEPLOY TOKEN</option>
+                    <option value="pools">LIQUIDITY POOLS</option>
+                    <option value="swap">SWAP ROUTER</option>
+                    <option value="tokens">MY TOKENS</option>
+                </select>
             </div>
 
-            <!-- Add Liquidity Card -->
-            <div class="card">
-                <h2>💧 Add Liquidity</h2>
-                <select id="poolSelect">
-                    <option value="">Select Pool First</option>
-                </select>
-                <input type="number" id="addAmount" placeholder="Amount to Add">
-                <button onclick="addLiquidity()">Add Liquidity</button>
-                <div id="liquidityResult" class="status"></div>
+            <!-- 1) DEPLOY TOKEN PANEL -->
+            <div id="deployPanel" class="panel">
+                <div class="card-title" style="margin-bottom: 20px;">DEPLOY NEW SPL TOKEN</div>
+                <div class="form-row">
+                    <div class="form-group"><label>TOKEN NAME</label><input type="text" id="tokenName" placeholder="Example: MAX Power" value="MAX Token"></div>
+                    <div class="form-group"><label>SYMBOL</label><input type="text" id="tokenSymbol" placeholder="MAX" value="MAX"></div>
+                    <div class="form-group"><label>DECIMALS</label><input type="number" id="tokenDecimals" value="9"></div>
+                    <div class="form-group"><label>TOTAL SUPPLY</label><input type="number" id="tokenSupply" value="10000000"></div>
+                </div>
+                <button class="action-button" id="deployTokenBtn">DEPLOY TOKEN</button>
+                <div id="deployStatus" class="status-area">⚡ Ready — Solana Devnet</div>
             </div>
 
-            <!-- Smart Swap Card -->
-            <div class="card">
-                <h2>🔄 Smart Swap</h2>
-                <select id="fromPool">
-                    <option value="">From Pool</option>
-                </select>
-                <select id="toPool">
-                    <option value="">To Pool</option>
-                </select>
-                <input type="number" id="swapAmount" placeholder="Amount to Swap">
-                <button onclick="estimateSwap()">📊 Estimate</button>
-                <button onclick="executeSwap()">🚀 Execute Best Route</button>
-                <div id="swapResult" class="status"></div>
+            <!-- 2) LIQUIDITY POOLS PANEL -->
+            <div id="poolsPanel" class="panel" style="display: none;">
+                <div class="card-title" style="margin-bottom: 20px;">CREATE LIQUIDITY POOL</div>
+                <div class="form-row">
+                    <div class="form-group"><label>TOKEN A (MINT)</label><input type="text" id="poolTokenA" placeholder="Token mint address"></div>
+                    <div class="form-group"><label>TOKEN B (MINT)</label><input type="text" id="poolTokenB" placeholder="Token mint address"></div>
+                    <div class="form-group"><label>FEE (BPS)</label><input type="number" id="poolFee" value="30"></div>
+                </div>
+                <button class="action-button" id="createPoolBtn">CREATE POOL</button>
+                <div id="createPoolStatus" class="status-area"></div>
+
+                <div style="margin-top: 32px;" class="card-title">MANAGE LIQUIDITY</div>
+                <div class="form-row">
+                    <div class="form-group"><label>SELECT POOL</label><select id="poolSelectDropdown"><option value="">— SELECT —</option></select></div>
+                    <div class="form-group"><label>ADD LIQUIDITY (AMOUNT)</label><input type="number" id="addLiquidityAmount" placeholder="Token amount"></div>
+                    <div class="form-group"><label>REMOVE LP TOKENS</label><input type="number" id="removeLpAmount" placeholder="LP to burn"></div>
+                </div>
+                <button class="action-button" id="addLiquidityBtn" style="margin-bottom: 8px;">ADD LIQUIDITY</button>
+                <button class="action-button" id="removeLiquidityBtn">REMOVE LIQUIDITY</button>
+                <div id="liquidityStatus" class="status-area"></div>
+
+                <div class="card-title" style="margin: 24px 0 12px 0;">EXISTING POOLS</div>
+                <div id="poolsListArea" class="status-area">— No pools yet —</div>
             </div>
 
-            <!-- Pool Info Card -->
-            <div class="card">
-                <h2>📊 Pool Statistics</h2>
-                <select id="infoPool" onchange="getPoolInfo()">
-                    <option value="">Select Pool</option>
-                </select>
-                <div id="poolInfo" class="status"></div>
+            <!-- 3) SWAP ROUTER PANEL -->
+            <div id="swapPanel" class="panel" style="display: none;">
+                <div class="card-title" style="margin-bottom: 20px;">SMART SWAP ROUTER</div>
+                <div class="form-row">
+                    <div class="form-group"><label>FROM TOKEN (MINT)</label><input type="text" id="swapFromMint" placeholder="Mint address"></div>
+                    <div class="form-group"><label>TO TOKEN (MINT)</label><input type="text" id="swapToMint" placeholder="Mint address"></div>
+                    <div class="form-group"><label>AMOUNT</label><input type="number" id="swapAmount" placeholder="0.0"></div>
+                </div>
+                <button class="action-button" id="estimateSwapBtn">ESTIMATE OUTPUT</button>
+                <button class="action-button" id="executeSwapBtn">EXECUTE SWAP</button>
+                <div id="swapResultArea" class="status-area">↻ Enter pair and amount</div>
+                <div id="swapExecuteStatus" class="status-area"></div>
+            </div>
+
+            <!-- 4) MY TOKENS PANEL -->
+            <div id="tokensPanel" class="panel" style="display: none;">
+                <div class="card-title" style="margin-bottom: 20px;">DEPLOYED TOKENS</div>
+                <div id="myTokensArea" class="status-area" style="max-height: 380px;">— No tokens deployed —</div>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@coral-xyz/anchor@0.29.0/dist/browser/index.js"></script>
-    
     <script>
-        // Configuration
-        const PROGRAM_ID = "YOUR_PROGRAM_ID_HERE"; // REPLACE WITH YOUR ACTUAL PROGRAM ID
-        const IDL = {
-            "version": "0.1.0",
-            "name": "dex_complete",
-            "instructions": [
-                {"name":"initialize","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[]},
-                {"name":"createPool","accounts":[{"name":"authority","isMut":true,"isSigner":true},{"name":"pool","isMut":true,"isSigner":true},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"fee","type":"u16"}]},
-                {"name":"addLiquidity","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"pool","isMut":true,"isSigner":false}],"args":[{"name":"amount","type":"u64"}]}
-            ],
-            "accounts": [{"name":"PoolAccount","type":{"kind":"struct","fields":[{"name":"fee","type":"u16"},{"name":"authority","type":"publicKey"},{"name":"totalLiquidity","type":"u64"}]}}]
-        };
+        (function(){
+            const connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+            let wallet = null;
+            let deployedTokens = [];
+            let pools = [];
 
-        let connection, wallet, program, pools = [];
-
-        // Initialize connection
-        connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
-
-        // Connect Wallet
-        async function connectWallet() {
-            if (!window.solana) {
-                alert('Please install Phantom wallet!');
-                return;
+            function loadStorage() {
+                const savedTokens = localStorage.getItem('MAX_deployed');
+                if(savedTokens) deployedTokens = JSON.parse(savedTokens);
+                const savedPools = localStorage.getItem('MAX_pools');
+                if(savedPools) pools = JSON.parse(savedPools);
+                refreshPoolsUI();
+                refreshMyTokensUI();
             }
-            
-            try {
-                const resp = await window.solana.connect();
-                wallet = window.solana;
-                const provider = new anchor.AnchorProvider(connection, wallet, {});
-                program = new anchor.Program(IDL, PROGRAM_ID, provider);
-                
-                document.getElementById('walletStatus').innerHTML = `
-                    <div class="success">✅ Connected: ${wallet.publicKey.toString().slice(0, 20)}...</div>
-                    <div class="info">💰 Network: Devnet</div>
-                `;
-                document.getElementById('connectWallet').style.display = 'none';
-                
-                loadPools();
-            } catch (err) {
-                document.getElementById('walletStatus').innerHTML = `<div class="error">❌ ${err.message}</div>`;
-            }
-        }
+            function saveTokens() { localStorage.setItem('MAX_deployed', JSON.stringify(deployedTokens)); refreshMyTokensUI(); }
+            function savePools() { localStorage.setItem('MAX_pools', JSON.stringify(pools)); refreshPoolsUI(); }
 
-        // Load all pools
-        async function loadPools() {
-            if (!program) return;
-            
-            try {
-                const allPools = await program.account.poolAccount.all();
-                pools = allPools;
-                
-                // Update dropdowns
-                const poolSelects = ['poolSelect', 'fromPool', 'toPool', 'infoPool'];
-                poolSelects.forEach(selectId => {
-                    const select = document.getElementById(selectId);
-                    if(select) {
-                        select.innerHTML = '<option value="">Select Pool</option>';
-                        pools.forEach((pool, i) => {
-                            const option = document.createElement('option');
-                            option.value = pool.publicKey.toString();
-                            option.textContent = `Pool ${i+1}: ${pool.account.totalLiquidity} LP`;
-                            select.appendChild(option);
-                        });
-                    }
-                });
-                
-                log('Loaded ' + pools.length + ' pools', 'success');
-            } catch (err) {
-                log('Error loading pools: ' + err.message, 'error');
+            function refreshMyTokensUI() {
+                const container = document.getElementById('myTokensArea');
+                if(!container) return;
+                if(!deployedTokens.length) { container.innerHTML = '— No tokens deployed —'; return; }
+                container.innerHTML = deployedTokens.map(t => `<div class="list-item"><span><b>${t.symbol}</b> / ${t.name}<br><span class="addr">${t.mint.slice(0,28)}…</span></span><button class="copy-mini" data-mint="${t.mint}">📋 COPY</button></div>`).join('');
+                document.querySelectorAll('.copy-mini').forEach(btn => btn.addEventListener('click', (e) => { navigator.clipboard.writeText(btn.dataset.mint); alert('Mint copied'); }));
             }
-        }
 
-        // Create Pool
-        async function createPool() {
-            if (!program) { log('Connect wallet first!', 'error'); return; }
-            
-            const fee = parseInt(document.getElementById('fee').value);
-            const poolName = document.getElementById('poolName').value;
-            
-            if (!fee) { log('Enter fee amount', 'error'); return; }
-            
-            log('Creating pool...', 'info');
-            
-            try {
-                const poolKeypair = solanaWeb3.Keypair.generate();
-                
-                const tx = await program.methods
-                    .createPool(fee)
-                    .accounts({
-                        authority: wallet.publicKey,
-                        pool: poolKeypair.publicKey,
-                        systemProgram: solanaWeb3.SystemProgram.programId,
-                    })
-                    .signers([poolKeypair])
-                    .rpc();
-                
-                log(`✅ Pool created! TX: ${tx.slice(0, 20)}...`, 'success');
-                log(`📊 Pool Address: ${poolKeypair.publicKey.toString()}`, 'info');
-                document.getElementById('poolResult').innerHTML += `<div>🎉 Pool "${poolName || 'Unnamed'}" created with ${fee/100}% fee</div>`;
-                
-                await loadPools();
-            } catch (err) {
-                log('Error: ' + err.message, 'error');
-            }
-        }
-
-        // Add Liquidity
-        async function addLiquidity() {
-            if (!program) { log('Connect wallet first!', 'error'); return; }
-            
-            const poolAddress = document.getElementById('poolSelect').value;
-            const amount = parseInt(document.getElementById('addAmount').value);
-            
-            if (!poolAddress || !amount) { log('Select pool and enter amount', 'error'); return; }
-            
-            log('Adding liquidity...', 'info');
-            
-            try {
-                const tx = await program.methods
-                    .addLiquidity(new anchor.BN(amount))
-                    .accounts({
-                        user: wallet.publicKey,
-                        pool: poolAddress,
-                    })
-                    .rpc();
-                
-                log(`✅ Liquidity added! TX: ${tx.slice(0, 20)}...`, 'success');
-                log(`💰 Added ${amount} LP tokens`, 'success');
-                await loadPools();
-            } catch (err) {
-                log('Error: ' + err.message, 'error');
-            }
-        }
-
-        // Estimate Swap (Smart Router Logic)
-        async function estimateSwap() {
-            const fromPool = document.getElementById('fromPool').value;
-            const toPool = document.getElementById('toPool').value;
-            const amount = parseFloat(document.getElementById('swapAmount').value);
-            
-            if (!fromPool || !toPool || !amount) {
-                log('Select pools and enter amount', 'error');
-                return;
-            }
-            
-            // Smart routing logic
-            const fromPoolData = pools.find(p => p.publicKey.toString() === fromPool);
-            const toPoolData = pools.find(p => p.publicKey.toString() === toPool);
-            
-            if (!fromPoolData || !toPoolData) {
-                log('Pool data not found', 'error');
-                return;
-            }
-            
-            // Calculate best route
-            const bestRoute = calculateBestRoute(amount, fromPoolData, toPoolData);
-            
-            document.getElementById('swapResult').innerHTML = `
-                <div class="success">📊 Estimated Output: ${bestRoute.amountOut.toFixed(6)} tokens</div>
-                <div class="info">🔄 Route: ${bestRoute.route}</div>
-                <div class="info">💸 Fee Impact: ${bestRoute.feeImpact}%</div>
-                <div class="success">⭐ Price Impact: ${bestRoute.priceImpact}%</div>
-            `;
-        }
-
-        // Smart Router Algorithm
-        function calculateBestRoute(amountIn, fromPool, toPool) {
-            // Direct route
-            const directOut = amountIn * 0.997; // After 0.3% fee
-            
-            // Check for multi-hop (if pools share common token)
-            let bestOut = directOut;
-            let route = 'Direct Swap';
-            let feeImpact = 0.3;
-            let priceImpact = ((amountIn / (fromPool.account.totalLiquidity || 1)) * 100).toFixed(2);
-            
-            // Multi-hop routing logic
-            for (const intermediate of pools) {
-                if (intermediate.publicKey.toString() !== fromPool.publicKey.toString() &&
-                    intermediate.publicKey.toString() !== toPool.publicKey.toString()) {
-                    
-                    // Route: fromPool -> intermediate -> toPool
-                    const hop1 = amountIn * 0.997;
-                    const hop2 = hop1 * 0.997;
-                    
-                    if (hop2 > bestOut) {
-                        bestOut = hop2;
-                        route = `Multi-hop (via intermediate pool)`;
-                        feeImpact = 0.6;
-                        priceImpact = ((amountIn / (intermediate.account.totalLiquidity || 1)) * 100).toFixed(2);
-                    }
+            function refreshPoolsUI() {
+                const container = document.getElementById('poolsListArea');
+                const select = document.getElementById('poolSelectDropdown');
+                if(container) {
+                    if(!pools.length) container.innerHTML = '— No liquidity pools —';
+                    else container.innerHTML = pools.map(p => `<div class="list-item"><span>🔄 ${p.tokenA.slice(0,8)}… / ${p.tokenB.slice(0,8)}… &nbsp; fee: ${p.fee/100}%</span></div>`).join('');
+                }
+                if(select) {
+                    select.innerHTML = '<option value="">— SELECT POOL —</option>' + pools.map((p,idx) => `<option value="${idx}">Pool ${idx+1}: ${p.tokenA.slice(0,8)}… / ${p.tokenB.slice(0,8)}…</option>`).join('');
                 }
             }
-            
-            return { amountOut: bestOut, route, feeImpact, priceImpact };
-        }
 
-        // Execute Swap
-        async function executeSwap() {
-            if (!program) { log('Connect wallet first!', 'error'); return; }
-            
-            const fromPool = document.getElementById('fromPool').value;
-            const amount = parseInt(document.getElementById('swapAmount').value);
-            
-            if (!fromPool || !amount) {
-                log('Select pool and enter amount', 'error');
-                return;
+            async function connectWallet() {
+                if(!window.solana) { document.getElementById('walletStatus').innerHTML = '<span class="error">⚠️ No wallet extension</span>'; return; }
+                try {
+                    const resp = await window.solana.connect();
+                    wallet = window.solana;
+                    document.getElementById('connectWalletBtn').innerHTML = 'WALLET ACTIVE';
+                    document.getElementById('walletStatus').innerHTML = `<span class="info">${wallet.publicKey.toString().slice(0,28)}… (devnet)</span>`;
+                } catch(e) { document.getElementById('walletStatus').innerHTML = `<span class="error">Connection refused</span>`; }
             }
-            
-            log('Executing smart swap...', 'info');
-            
-            try {
-                // This is where you'd call your actual swap function
-                // For now, just log the best route
-                const fromPoolData = pools.find(p => p.publicKey.toString() === fromPool);
-                const route = calculateBestRoute(amount, fromPoolData, fromPoolData);
-                
-                log(`✅ Swap executed via: ${route.route}`, 'success');
-                log(`💰 Input: ${amount}, Output: ${route.amountOut.toFixed(6)}`, 'success');
-            } catch (err) {
-                log('Error: ' + err.message, 'error');
+
+            async function deployToken() {
+                if(!wallet) { alert('Connect wallet'); return; }
+                const name = document.getElementById('tokenName').value;
+                const symbol = document.getElementById('tokenSymbol').value;
+                const decimals = parseInt(document.getElementById('tokenDecimals').value);
+                const totalSupply = parseInt(document.getElementById('tokenSupply').value);
+                const statusDiv = document.getElementById('deployStatus');
+                statusDiv.innerHTML = '<span class="info">⏳ deploying ...</span>';
+                try {
+                    const mintKeypair = solanaWeb3.Keypair.generate();
+                    const rent = await connection.getMinimumBalanceForRentExemption(82);
+                    const tx = new solanaWeb3.Transaction();
+                    tx.add(solanaWeb3.SystemProgram.createAccount({
+                        fromPubkey: wallet.publicKey,
+                        newAccountPubkey: mintKeypair.publicKey,
+                        lamports: rent,
+                        space: 82,
+                        programId: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+                    }));
+                    const {blockhash} = await connection.getLatestBlockhash();
+                    tx.recentBlockhash = blockhash;
+                    tx.feePayer = wallet.publicKey;
+                    const signed = await wallet.signTransaction(tx);
+                    const txid = await connection.sendRawTransaction(signed.serialize());
+                    deployedTokens.push({ mint: mintKeypair.publicKey.toString(), name, symbol, decimals, totalSupply, txid });
+                    saveTokens();
+                    statusDiv.innerHTML = `<span class="success">✅ Token deployed</span><br>Mint: ${mintKeypair.publicKey.toString()}<br><a href="https://explorer.solana.com/address/${mintKeypair.publicKey.toString()}?cluster=devnet" target="_blank" style="color:#6C9BD2">view on explorer ↗</a>`;
+                } catch(e) { statusDiv.innerHTML = `<span class="error">❌ ${e.message}</span>`; }
             }
-        }
 
-        // Get Pool Info
-        async function getPoolInfo() {
-            const poolAddress = document.getElementById('infoPool').value;
-            if (!poolAddress) return;
-            
-            const pool = pools.find(p => p.publicKey.toString() === poolAddress);
-            if (!pool) return;
-            
-            document.getElementById('poolInfo').innerHTML = `
-                <div class="info">📌 Address: ${pool.publicKey.toString().slice(0, 30)}...</div>
-                <div class="success">💰 Total Liquidity: ${pool.account.totalLiquidity}</div>
-                <div class="info">💸 Fee: ${pool.account.fee / 100}%</div>
-                <div class="info">👤 Authority: ${pool.account.authority.toString().slice(0, 30)}...</div>
-            `;
-        }
+            function createPool() {
+                const tokenA = document.getElementById('poolTokenA').value.trim();
+                const tokenB = document.getElementById('poolTokenB').value.trim();
+                const fee = parseInt(document.getElementById('poolFee').value);
+                if(!tokenA || !tokenB) { alert('Enter token mint addresses'); return; }
+                pools.push({ tokenA, tokenB, fee, reserveA: 0, reserveB: 0, totalLp: 0 });
+                savePools();
+                document.getElementById('createPoolStatus').innerHTML = `<span class="success">✅ Pool created | fee: ${fee/100}%</span>`;
+                document.getElementById('poolTokenA').value = '';
+                document.getElementById('poolTokenB').value = '';
+            }
 
-        // Helper function for logging
-        function log(message, type = 'info') {
-            const statusDiv = document.getElementById('swapResult');
-            const color = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#3b82f6');
-            statusDiv.innerHTML = `<div style="color: ${color}">${new Date().toLocaleTimeString()}: ${message}</div>` + statusDiv.innerHTML;
-            
-            // Also log to console
-            console.log(message);
-        }
+            function addLiquidity() {
+                const idx = document.getElementById('poolSelectDropdown').value;
+                const amount = parseFloat(document.getElementById('addLiquidityAmount').value);
+                if(idx === '' || isNaN(amount)) { alert('Select pool & amount'); return; }
+                const pool = pools[parseInt(idx)];
+                const lpTokens = pool.totalLp === 0 ? Math.sqrt(amount*amount) : (amount / (pool.reserveA||1)) * pool.totalLp;
+                pool.reserveA += amount; pool.reserveB += amount; pool.totalLp += lpTokens;
+                savePools();
+                document.getElementById('liquidityStatus').innerHTML = `<span class="success">➕ Added ${amount} → ${lpTokens.toFixed(6)} LP</span>`;
+                document.getElementById('addLiquidityAmount').value = '';
+            }
 
-        // Auto-load on page load
-        window.onload = () => {
-            console.log('DEX Ready! Connect your wallet to start.');
-            console.log('Program ID needed:', PROGRAM_ID);
-        };
+            function removeLiquidity() {
+                const idx = document.getElementById('poolSelectDropdown').value;
+                const lpAmount = parseFloat(document.getElementById('removeLpAmount').value);
+                if(idx === '' || isNaN(lpAmount)) return;
+                const pool = pools[parseInt(idx)];
+                if(lpAmount > pool.totalLp) { alert('Insufficient LP'); return; }
+                const amountA = (lpAmount / pool.totalLp) * pool.reserveA;
+                const amountB = (lpAmount / pool.totalLp) * pool.reserveB;
+                pool.reserveA -= amountA; pool.reserveB -= amountB; pool.totalLp -= lpAmount;
+                savePools();
+                document.getElementById('liquidityStatus').innerHTML = `<span class="success">➖ Removed LP: ${lpAmount} → ${amountA.toFixed(4)} / ${amountB.toFixed(4)}</span>`;
+                document.getElementById('removeLpAmount').value = '';
+            }
+
+            function estimateSwap() {
+                const fromMint = document.getElementById('swapFromMint').value;
+                const toMint = document.getElementById('swapToMint').value;
+                const amount = parseFloat(document.getElementById('swapAmount').value);
+                if(!fromMint || !toMint || isNaN(amount)) { document.getElementById('swapResultArea').innerHTML = '<span class="info">Enter mint addresses & amount</span>'; return; }
+                const pool = pools.find(p => (p.tokenA === fromMint && p.tokenB === toMint) || (p.tokenA === toMint && p.tokenB === fromMint));
+                if(!pool) { document.getElementById('swapResultArea').innerHTML = '<span class="error">No pool for this pair</span>'; return; }
+                const isAtoB = pool.tokenA === fromMint;
+                const reserveIn = isAtoB ? pool.reserveA : pool.reserveB;
+                const reserveOut = isAtoB ? pool.reserveB : pool.reserveA;
+                const amountOut = (amount * (10000 - pool.fee) / 10000 * reserveOut) / (reserveIn + amount * (10000 - pool.fee) / 10000);
+                document.getElementById('swapResultArea').innerHTML = `<span class="success">↻ ESTIMATED: ${amountOut.toFixed(6)} tokens (fee ${pool.fee/100}%)</span>`;
+            }
+
+            async function executeSwap() {
+                if(!wallet) { alert('Connect wallet'); return; }
+                document.getElementById('swapExecuteStatus').innerHTML = '<span class="info">Demo mode — on-chain execution would happen here</span>';
+            }
+
+            // DROPDOWN (inside card) to switch panels
+            const modeSelect = document.getElementById('modeSelect');
+            const panels = {
+                deploy: document.getElementById('deployPanel'),
+                pools: document.getElementById('poolsPanel'),
+                swap: document.getElementById('swapPanel'),
+                tokens: document.getElementById('tokensPanel')
+            };
+            modeSelect.addEventListener('change', (e) => {
+                Object.values(panels).forEach(p => { if(p) p.style.display = 'none'; });
+                const active = panels[e.target.value];
+                if(active) active.style.display = 'block';
+            });
+
+            // EVENT BINDINGS
+            document.getElementById('connectWalletBtn').onclick = connectWallet;
+            document.getElementById('deployTokenBtn').onclick = deployToken;
+            document.getElementById('createPoolBtn').onclick = createPool;
+            document.getElementById('addLiquidityBtn').onclick = addLiquidity;
+            document.getElementById('removeLiquidityBtn').onclick = removeLiquidity;
+            document.getElementById('estimateSwapBtn').onclick = estimateSwap;
+            document.getElementById('executeSwapBtn').onclick = executeSwap;
+
+            loadStorage();
+        })();
     </script>
 </body>
 </html>
