@@ -590,6 +590,11 @@
                     });
 
                     // Construct createPool instruction
+                    const feeBuffer = new Uint8Array(new Uint16Array([fee]).buffer);
+                    const dataArray = new Uint8Array(1 + feeBuffer.length);
+                    dataArray[0] = 0; // createPool instruction index
+                    dataArray.set(feeBuffer, 1);
+
                     const createPoolIx = new solanaWeb3.TransactionInstruction({
                         programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
                         keys: [
@@ -599,10 +604,7 @@
                             { pubkey: new solanaWeb3.PublicKey(tokenB), isSigner: false, isWritable: false },
                             { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
                         ],
-                        data: Buffer.concat([
-                            Buffer.from([0]), // createPool instruction index
-                            Buffer.from(new Uint16Array([fee]).buffer)
-                        ])
+                        data: dataArray
                     });
 
                     transaction.add(createPoolIx);
@@ -665,16 +667,18 @@
                     });
 
                     // Construct addLiquidity instruction
+                    const amountBuffer = new Uint8Array(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer);
+                    const addLiquidityData = new Uint8Array(1 + amountBuffer.length);
+                    addLiquidityData[0] = 1; // addLiquidity instruction index
+                    addLiquidityData.set(amountBuffer, 1);
+
                     const addLiquidityIx = new solanaWeb3.TransactionInstruction({
                         programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
                         keys: [
                             { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
                             { pubkey: new solanaWeb3.PublicKey(pool.poolAddress), isSigner: false, isWritable: true }
                         ],
-                        data: Buffer.concat([
-                            Buffer.from([1]), // addLiquidity instruction index
-                            Buffer.from(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer)
-                        ])
+                        data: addLiquidityData
                     });
 
                     transaction.add(addLiquidityIx);
@@ -734,16 +738,18 @@
                     });
 
                     // Construct removeLiquidity instruction (update index when available)
+                    const removeLpBuffer = new Uint8Array(new BigUint64Array([BigInt(Math.floor(lpAmount * 1e9))]).buffer);
+                    const removeLiquidityData = new Uint8Array(1 + removeLpBuffer.length);
+                    removeLiquidityData[0] = 2; // removeLiquidity instruction index - UPDATE THIS
+                    removeLiquidityData.set(removeLpBuffer, 1);
+
                     const removeLiquidityIx = new solanaWeb3.TransactionInstruction({
                         programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
                         keys: [
                             { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
                             { pubkey: new solanaWeb3.PublicKey(pool.poolAddress), isSigner: false, isWritable: true }
                         ],
-                        data: Buffer.concat([
-                            Buffer.from([2]), // removeLiquidity instruction index - UPDATE THIS
-                            Buffer.from(new BigUint64Array([BigInt(Math.floor(lpAmount * 1e9))]).buffer)
-                        ])
+                        data: removeLiquidityData
                     });
 
                     transaction.add(removeLiquidityIx);
@@ -821,6 +827,11 @@
                     });
 
                     // Construct swap instruction (update index and accounts when available)
+                    const swapAmountBuffer = new Uint8Array(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer);
+                    const swapData = new Uint8Array(1 + swapAmountBuffer.length);
+                    swapData[0] = 3; // swap instruction index - UPDATE THIS
+                    swapData.set(swapAmountBuffer, 1);
+
                     const swapIx = new solanaWeb3.TransactionInstruction({
                         programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
                         keys: [
@@ -829,10 +840,7 @@
                             { pubkey: new solanaWeb3.PublicKey(fromMint), isSigner: false, isWritable: false },
                             { pubkey: new solanaWeb3.PublicKey(toMint), isSigner: false, isWritable: false }
                         ],
-                        data: Buffer.concat([
-                            Buffer.from([3]), // swap instruction index - UPDATE THIS
-                            Buffer.from(new BigUint64Array([BigInt(Math.floor(amount * 1e9))]).buffer)
-                        ])
+                        data: swapData
                     });
 
                     transaction.add(swapIx);
