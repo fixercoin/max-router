@@ -1,133 +1,153 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { connection, USDC_DEVNET, SOL_DEVNET, DEX_PROGRAM_ID } from '../lib/solanaService';
-import { encodeInstructionData, encodeU64LE } from '../lib/anchorUtils';
-import * as solanaWeb3 from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { MaxDexClient } from '../lib/maxDexClient';
 import './Page.css';
 
 const SwapRouterPage: React.FC = () => {
-  const { wallet, deployedTokens, pools } = useAppContext();
-  const [fromMint, setFromMint] = useState('');
-  const [toMint, setToMint] = useState('');
+  const { wallet, dexClient, deployedTokens, pools, setPools } = useAppContext();
+  const [fromToken, setFromToken] = useState<any>(null);
+  const [toToken, setToToken] = useState<any>(null);
   const [swapAmount, setSwapAmount] = useState('');
-  const [swapResult, setSwapResult] = useState('↻ Select tokens and amount');
-  const [swapExecuteStatus, setSwapExecuteStatus] = useState('');
+  const [estimatedOutput, setEstimatedOutput] = useState('');
+  const [swapStatus, setSwapStatus] = useState('');
+  const [selectedPool, setSelectedPool] = useState<any>(null);
 
   const allTokens = [
-    { symbol: 'USDC', mint: USDC_DEVNET },
-    { symbol: 'SOL', mint: SOL_DEVNET },
-    ...deployedTokens,
+    { symbol: 'USDC', mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr', decimals: 6 },
+    { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', decimals: 9 },
+    ...deployedTokens.map(t => ({
+      symbol: t.symbol,
+      mint: t.mint,
+      decimals: t.decimals
+    }))
   ];
 
+  // Find pool when tokens are selected
+  useEffect(() => {
+    if (fromToken && toToken) {
+      const pool = pools.find(
+        (p) =>
+          (p.tokenA === fromToken.mint && p.tokenB === toToken.mint) ||
+          (p.tokenA === toToken.mint && p.tokenB === fromToken.mint)
+      );
+      setSelectedPool(pool || null);
+      
+      if (!pool) {
+        setEstimatedOutput('❌ No liquidity pool found for this pair');
+      } else {
+        setEstimatedOutput('Enter amount to estimate');
+      }
+    }
+  }, [fromToken, toToken, pools]);
+
+  // Estimate swap output
   const handleEstimateSwap = () => {
-    if (!fromMint || !toMint || !swapAmount) {
-      setSwapResult('Enter mint addresses & amount');
+    if (!fromToken || !toToken || !selectedPool) {
+      setEstimatedOutput('❌ Select tokens and ensure pool exists');
       return;
     }
 
     const amount = parseFloat(swapAmount);
-    const pool = pools.find(
-      (p) =>
-        (p.tokenA === fromMint && p.tokenB === toMint) ||
-        (p.tokenA === toMint && p.tokenB === fromMint)
-    );
-
-    if (!pool) {
-      setSwapResult('No pool for this pair');
+    if (isNaN(amount) || amount <= 0) {
+      setEstimatedOutput('❌ Enter valid amount');
       return;
     }
 
-    const isAtoB = pool.tokenA === fromMint;
-    const reserveIn = isAtoB ? pool.reserveA : pool.reserveB;
-    const reserveOut = isAtoB ? pool.reserveB : pool.reserveA;
-    const amountOut =
-      (amount * (10000 - pool.fee)) / 10000 / (reserveIn + (amount * (10000 - pool.fee)) / 10000) * reserveOut;
-
-    setSwapResult(`↻ ESTIMATED: ${amountOut.toFixed(6)} tokens (fee ${pool.fee / 100}%)`);
+    const isAtoB = selectedPool.tokenA === fromToken.mint;
+    const reserveIn = isAtoB ? selectedPool.reserveA : selectedPool.reserveB;
+    const reserveOut = isAtoB ? selectedPool.reserveB : selectedPool.reserveA;
+    
+    // Convert to raw amounts with decimals
+    const rawAmountIn = amount * Math.pow(10, fromToken.decimals);
+    
+    // Calculate output using x*y=k formula with fee
+    const feeBps = selectedPool.fee;
+    const feeMultiplier = (10000 - feeBps) / 10000;
+    const amountInWithFee = rawAmountIn * feeMultiplier;
+    
+    const rawAmountOut = (amountInWithFee * reserveOut) / (reserveIn + amountInWithFee);
+    const amountOut = rawAmountOut / Math.pow(10, toToken.decimals);
+    
+    setEstimatedOutput(
+      `↻ Estimated Output: ${amountOut.toFixed(6)} ${toToken.symbol}\n` +
+      `📊 Fee: ${feeBps / 100}%\n` +
+      `💧 Liquidity: ${(reserveIn / Math.pow(10, fromToken.decimals)).toFixed(2)} ${fromToken.symbol} / ` +
+      `${(reserveOut / Math.pow(10, toToken.decimals)).toFixed(2)} ${toToken.symbol}`
+    );
+    
+    return amountOut;
   };
 
+  // Execute swap
   const handleExecuteSwap = async () => {
-    if (!wallet) {
-      alert('Connect wallet');
+    if (!wallet || !dexClient) {
+      alert('Connect wallet and initialize DEX first');
       return;
     }
 
-    if (!fromMint || !toMint || !swapAmount) {
-      setSwapExecuteStatus('Enter all swap details');
+    if (!fromToken || !toToken || !selectedPool) {
+      alert('Select tokens and ensure pool exists');
       return;
     }
 
     const amount = parseFloat(swapAmount);
-    const pool = pools.find(
-      (p) =>
-        (p.tokenA === fromMint && p.tokenB === toMint) ||
-        (p.tokenA === toMint && p.tokenB === fromMint)
-    );
-
-    if (!pool) {
-      setSwapExecuteStatus('No pool found for this pair');
+    if (isNaN(amount) || amount <= 0) {
+      alert('Enter valid amount');
       return;
     }
 
-    setSwapExecuteStatus('⏳ Executing swap...');
+    setSwapStatus('⏳ Preparing swap...');
 
     try {
-      const isAtoB = pool.tokenA === fromMint;
-      const reserveIn = isAtoB ? pool.reserveA : pool.reserveB;
-      const reserveOut = isAtoB ? pool.reserveB : pool.reserveA;
-      const amountOut =
-        (amount * (10000 - pool.fee)) / 10000 / (reserveIn + (amount * (10000 - pool.fee)) / 10000) * reserveOut;
-
-      const blockhashData = await connection.getLatestBlockhash('confirmed');
-      const transaction = new solanaWeb3.Transaction({
-        recentBlockhash: blockhashData.blockhash,
-        feePayer: wallet.publicKey,
-      });
-
-      // Encode swap instruction: amount_in (u64) + minimum_amount_out (u64)
-      const amountInData = encodeU64LE(BigInt(Math.floor(amount * 1e9)));
-      const minimumOutData = encodeU64LE(BigInt(Math.floor(amountOut * 1e9)));
-      const swapData = Buffer.concat([amountInData, minimumOutData]);
-      const swapInstructionData = encodeInstructionData('swap', new Uint8Array(swapData));
-
-      const swapIx = new solanaWeb3.TransactionInstruction({
-        programId: new solanaWeb3.PublicKey(DEX_PROGRAM_ID),
-        keys: [
-          { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: new solanaWeb3.PublicKey(pool.poolAddress), isSigner: false, isWritable: true },
-          { pubkey: new solanaWeb3.PublicKey(fromMint), isSigner: false, isWritable: false },
-          { pubkey: new solanaWeb3.PublicKey(toMint), isSigner: false, isWritable: false },
-        ],
-        data: swapInstructionData,
-      });
-
-      transaction.add(swapIx);
-
-      setSwapExecuteStatus('⏳ Waiting for wallet signature...');
-      const signed = await wallet.signTransaction(transaction);
-
-      setSwapExecuteStatus('⏳ Sending swap transaction...');
-      const signature = await connection.sendRawTransaction(signed.serialize());
-
-      setSwapExecuteStatus('⏳ Waiting for confirmation...');
-      await connection.confirmTransaction(
-        {
-          signature,
-          blockhash: blockhashData.blockhash,
-          lastValidBlockHeight: blockhashData.lastValidBlockHeight,
-        },
-        'confirmed'
+      const isAtoB = selectedPool.tokenA === fromToken.mint;
+      const reserveIn = isAtoB ? selectedPool.reserveA : selectedPool.reserveB;
+      const reserveOut = isAtoB ? selectedPool.reserveB : selectedPool.reserveA;
+      
+      // Calculate minimum amount out with 1% slippage tolerance
+      const rawAmountIn = amount * Math.pow(10, fromToken.decimals);
+      const feeMultiplier = (10000 - selectedPool.fee) / 10000;
+      const amountInWithFee = rawAmountIn * feeMultiplier;
+      const rawAmountOut = (amountInWithFee * reserveOut) / (reserveIn + amountInWithFee);
+      const minAmountOut = rawAmountOut * 0.99; // 1% slippage tolerance
+      
+      const poolPubkey = new PublicKey(selectedPool.poolAddress);
+      const tokenInPubkey = new PublicKey(fromToken.mint);
+      const tokenOutPubkey = new PublicKey(toToken.mint);
+      
+      setSwapStatus('⏳ Executing swap on MAX DEX...');
+      
+      await dexClient.swap(poolPubkey, tokenInPubkey, tokenOutPubkey, rawAmountIn, minAmountOut);
+      
+      // Refresh pool data
+      const updatedPool = await dexClient.program.account.poolAccount.fetch(poolPubkey);
+      const updatedPools = pools.map(p => 
+        p.poolAddress === selectedPool.poolAddress 
+          ? {
+              ...p,
+              reserveA: updatedPool.reserveA,
+              reserveB: updatedPool.reserveB,
+              totalVolume: updatedPool.totalVolume,
+              totalFeesCollected: updatedPool.totalFeesCollected
+            }
+          : p
       );
-
-      setSwapExecuteStatus(
-        `✅ Swap executed! Sent: ${amount} | Received: ${amountOut.toFixed(6)}<br>🔗 <a href="https://explorer.solana.com/tx/${signature}?cluster=devnet" target="_blank" style="color:#6C9BD2">View Tx</a>`
+      setPools(updatedPools);
+      
+      const outputAmount = ((rawAmountOut / Math.pow(10, toToken.decimals))).toFixed(6);
+      
+      setSwapStatus(
+        `✅ Swap executed successfully!\n` +
+        `📤 Sent: ${amount} ${fromToken.symbol}\n` +
+        `📥 Received: ${outputAmount} ${toToken.symbol}\n` +
+        `💰 Fee: ${selectedPool.fee / 100}%`
       );
-      setFromMint('');
-      setToMint('');
+      
       setSwapAmount('');
-      setSwapResult('↻ Swap cleared — enter new pair');
+      setEstimatedOutput('');
+      
     } catch (e: any) {
-      setSwapExecuteStatus(`❌ Swap failed: ${e.message}`);
+      setSwapStatus(`❌ Swap failed: ${e.message}`);
       console.error('Swap error:', e);
     }
   };
@@ -140,8 +160,14 @@ const SwapRouterPage: React.FC = () => {
 
       <div className="form-row">
         <div className="form-group">
-          <label>FROM TOKEN (SYMBOL/MINT)</label>
-          <select value={fromMint} onChange={(e) => setFromMint(e.target.value)}>
+          <label>FROM TOKEN</label>
+          <select 
+            value={fromToken?.mint || ''} 
+            onChange={(e) => {
+              const token = allTokens.find(t => t.mint === e.target.value);
+              setFromToken(token);
+            }}
+          >
             <option value="">— SELECT TOKEN —</option>
             {allTokens.map((t) => (
               <option key={t.mint} value={t.mint}>
@@ -150,9 +176,16 @@ const SwapRouterPage: React.FC = () => {
             ))}
           </select>
         </div>
+
         <div className="form-group">
-          <label>TO TOKEN (SYMBOL/MINT)</label>
-          <select value={toMint} onChange={(e) => setToMint(e.target.value)}>
+          <label>TO TOKEN</label>
+          <select 
+            value={toToken?.mint || ''} 
+            onChange={(e) => {
+              const token = allTokens.find(t => t.mint === e.target.value);
+              setToToken(token);
+            }}
+          >
             <option value="">— SELECT TOKEN —</option>
             {allTokens.map((t) => (
               <option key={t.mint} value={t.mint}>
@@ -161,6 +194,7 @@ const SwapRouterPage: React.FC = () => {
             ))}
           </select>
         </div>
+
         <div className="form-group">
           <label>AMOUNT</label>
           <input
@@ -168,19 +202,40 @@ const SwapRouterPage: React.FC = () => {
             value={swapAmount}
             onChange={(e) => setSwapAmount(e.target.value)}
             placeholder="0.0"
+            step="any"
           />
         </div>
       </div>
 
-      <button className="action-button" onClick={handleEstimateSwap}>
-        ESTIMATE OUTPUT
-      </button>
-      <button className="action-button" onClick={handleExecuteSwap}>
-        EXECUTE SWAP
-      </button>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button className="action-button" onClick={handleEstimateSwap}>
+          ESTIMATE OUTPUT
+        </button>
+        <button 
+          className="action-button" 
+          onClick={handleExecuteSwap}
+          disabled={!selectedPool || !swapAmount}
+        >
+          EXECUTE SWAP
+        </button>
+      </div>
 
-      <div className="status-area" dangerouslySetInnerHTML={{ __html: swapResult }} />
-      <div className="status-area" dangerouslySetInnerHTML={{ __html: swapExecuteStatus }} />
+      {selectedPool && (
+        <div className="status-area" style={{ marginBottom: '10px', background: '#0C111A' }}>
+          🔄 Pool: {selectedPool.symbolA}/{selectedPool.symbolB}<br />
+          💧 Liquidity: {(selectedPool.reserveA / 1e6).toFixed(2)} {selectedPool.symbolA} / {(selectedPool.reserveB / 1e6).toFixed(2)} {selectedPool.symbolB}<br />
+          💰 Fee: {selectedPool.fee / 100}%<br />
+          📊 24h Volume: {(selectedPool.totalVolume / 1e6 || 0).toFixed(2)}
+        </div>
+      )}
+
+      <div className="status-area" style={{ whiteSpace: 'pre-line' }}>
+        {estimatedOutput}
+      </div>
+      
+      <div className="status-area" style={{ whiteSpace: 'pre-line', marginTop: '10px' }}>
+        {swapStatus}
+      </div>
     </div>
   );
 };
