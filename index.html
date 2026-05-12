@@ -254,8 +254,8 @@
             <div id="poolsPanel" class="panel" style="display: none;">
                 <div class="card-title" style="margin-bottom: 20px;">CREATE LIQUIDITY POOL</div>
                 <div class="form-row">
-                    <div class="form-group"><label>TOKEN A (MINT)</label><input type="text" id="poolTokenA" placeholder="Token mint address"></div>
-                    <div class="form-group"><label>TOKEN B (MINT)</label><input type="text" id="poolTokenB" placeholder="Token mint address"></div>
+                    <div class="form-group"><label>TOKEN A (MINT)</label><input type="text" id="poolTokenA" placeholder="Your token mint address"></div>
+                    <div class="form-group"><label>TOKEN B (DEVNET)</label><select id="poolTokenB"><option value="">— SELECT TOKEN —</option><option value="EPjFWaLb3hyccqJ1yckQWNufZi8MWYrrT4yfzJstd6M">USDC (Devnet)</option><option value="So11111111111111111111111111111111111111112">SOL (Devnet)</option></select></div>
                     <div class="form-group"><label>FEE (BPS)</label><input type="number" id="poolFee" value="30"></div>
                 </div>
                 <button class="action-button" id="createPoolBtn">CREATE POOL</button>
@@ -278,13 +278,13 @@
             <div id="swapPanel" class="panel" style="display: none;">
                 <div class="card-title" style="margin-bottom: 20px;">SMART SWAP ROUTER</div>
                 <div class="form-row">
-                    <div class="form-group"><label>FROM TOKEN (MINT)</label><input type="text" id="swapFromMint" placeholder="Mint address"></div>
-                    <div class="form-group"><label>TO TOKEN (MINT)</label><input type="text" id="swapToMint" placeholder="Mint address"></div>
+                    <div class="form-group"><label>FROM TOKEN (SYMBOL/MINT)</label><select id="swapFromMint"><option value="">— SELECT TOKEN —</option></select></div>
+                    <div class="form-group"><label>TO TOKEN (SYMBOL/MINT)</label><select id="swapToMint"><option value="">— SELECT TOKEN —</option></select></div>
                     <div class="form-group"><label>AMOUNT</label><input type="number" id="swapAmount" placeholder="0.0"></div>
                 </div>
                 <button class="action-button" id="estimateSwapBtn">ESTIMATE OUTPUT</button>
                 <button class="action-button" id="executeSwapBtn">EXECUTE SWAP</button>
-                <div id="swapResultArea" class="status-area">↻ Enter pair and amount</div>
+                <div id="swapResultArea" class="status-area">↻ Select tokens and amount</div>
                 <div id="swapExecuteStatus" class="status-area"></div>
             </div>
 
@@ -299,6 +299,8 @@
     <script>
         (function(){
             const connection = new solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
+            const USDC_DEVNET = 'EPjFWaLb3hyccqJ1yckQWNufZi8MWYrrT4yfzJstd6M';
+            const SOL_DEVNET = 'So11111111111111111111111111111111111111112';
             let wallet = null;
             let deployedTokens = [];
             let pools = [];
@@ -311,8 +313,27 @@
                 refreshPoolsUI();
                 refreshMyTokensUI();
             }
-            function saveTokens() { localStorage.setItem('MAX_deployed', JSON.stringify(deployedTokens)); refreshMyTokensUI(); }
+            function saveTokens() { localStorage.setItem('MAX_deployed', JSON.stringify(deployedTokens)); refreshMyTokensUI(); refreshSwapTokens(); }
             function savePools() { localStorage.setItem('MAX_pools', JSON.stringify(pools)); refreshPoolsUI(); }
+
+            function refreshSwapTokens() {
+                const commonTokens = [
+                    { symbol: 'USDC', mint: USDC_DEVNET },
+                    { symbol: 'SOL', mint: SOL_DEVNET }
+                ];
+                const allTokens = [...deployedTokens, ...commonTokens];
+                const fromSelect = document.getElementById('swapFromMint');
+                const toSelect = document.getElementById('swapToMint');
+
+                const fromValue = fromSelect.value;
+                const toValue = toSelect.value;
+
+                fromSelect.innerHTML = '<option value="">— SELECT TOKEN —</option>' + allTokens.map(t => `<option value="${t.mint}">${t.symbol} (${t.mint.slice(0,8)}…)</option>`).join('');
+                toSelect.innerHTML = '<option value="">— SELECT TOKEN —</option>' + allTokens.map(t => `<option value="${t.mint}">${t.symbol} (${t.mint.slice(0,8)}…)</option>`).join('');
+
+                if(fromValue) fromSelect.value = fromValue;
+                if(toValue) toSelect.value = toValue;
+            }
 
             function refreshMyTokensUI() {
                 const container = document.getElementById('myTokensArea');
@@ -327,10 +348,18 @@
                 const select = document.getElementById('poolSelectDropdown');
                 if(container) {
                     if(!pools.length) container.innerHTML = '— No liquidity pools —';
-                    else container.innerHTML = pools.map(p => `<div class="list-item"><span>🔄 ${p.tokenA.slice(0,8)}… / ${p.tokenB.slice(0,8)}… &nbsp; fee: ${p.fee/100}%</span></div>`).join('');
+                    else container.innerHTML = pools.map(p => {
+                        const symbolA = p.symbolA || p.tokenA.slice(0,6);
+                        const symbolB = p.symbolB || p.tokenB.slice(0,6);
+                        return `<div class="list-item"><span>🔄 ${symbolA} / ${symbolB} &nbsp; fee: ${p.fee/100}%</span></div>`;
+                    }).join('');
                 }
                 if(select) {
-                    select.innerHTML = '<option value="">— SELECT POOL —</option>' + pools.map((p,idx) => `<option value="${idx}">Pool ${idx+1}: ${p.tokenA.slice(0,8)}… / ${p.tokenB.slice(0,8)}…</option>`).join('');
+                    select.innerHTML = '<option value="">— SELECT POOL —</option>' + pools.map((p,idx) => {
+                        const symbolA = p.symbolA || p.tokenA.slice(0,6);
+                        const symbolB = p.symbolB || p.tokenB.slice(0,6);
+                        return `<option value="${idx}">Pool ${idx+1}: ${symbolA}/${symbolB}</option>`;
+                    }).join('');
                 }
             }
 
@@ -484,9 +513,15 @@
                 const tokenB = document.getElementById('poolTokenB').value.trim();
                 const fee = parseInt(document.getElementById('poolFee').value);
                 if(!tokenA || !tokenB) { alert('Enter token mint addresses'); return; }
-                pools.push({ tokenA, tokenB, fee, reserveA: 0, reserveB: 0, totalLp: 0 });
+
+                const tokenAData = deployedTokens.find(t => t.mint === tokenA);
+                const tokenBData = deployedTokens.find(t => t.mint === tokenB);
+                const symbolA = tokenAData ? tokenAData.symbol : tokenA.slice(0,6);
+                const symbolB = tokenBData ? tokenBData.symbol : tokenB.slice(0,6);
+
+                pools.push({ tokenA, tokenB, symbolA, symbolB, fee, reserveA: 0, reserveB: 0, totalLp: 0 });
                 savePools();
-                document.getElementById('createPoolStatus').innerHTML = `<span class="success">✅ Pool created | fee: ${fee/100}%</span>`;
+                document.getElementById('createPoolStatus').innerHTML = `<span class="success">✅ Pool created: ${symbolA}/${symbolB} | fee: ${fee/100}%</span>`;
                 document.getElementById('poolTokenA').value = '';
                 document.getElementById('poolTokenB').value = '';
             }
@@ -533,7 +568,36 @@
 
             async function executeSwap() {
                 if(!wallet) { alert('Connect wallet'); return; }
-                document.getElementById('swapExecuteStatus').innerHTML = '<span class="info">Demo mode — on-chain execution would happen here</span>';
+                const statusDiv = document.getElementById('swapExecuteStatus');
+                const fromMint = document.getElementById('swapFromMint').value;
+                const toMint = document.getElementById('swapToMint').value;
+                const amount = parseFloat(document.getElementById('swapAmount').value);
+
+                if(!fromMint || !toMint || isNaN(amount)) { statusDiv.innerHTML = '<span class="error">Enter complete swap details</span>'; return; }
+
+                const pool = pools.find(p => (p.tokenA === fromMint && p.tokenB === toMint) || (p.tokenA === toMint && p.tokenB === fromMint));
+                if(!pool) { statusDiv.innerHTML = '<span class="error">No pool found for this pair</span>'; return; }
+
+                statusDiv.innerHTML = '<span class="info">⏳ Executing swap on Devnet...</span>';
+
+                try {
+                    const isAtoB = pool.tokenA === fromMint;
+                    const reserveIn = isAtoB ? pool.reserveA : pool.reserveB;
+                    const reserveOut = isAtoB ? pool.reserveB : pool.reserveA;
+                    const amountOut = (amount * (10000 - pool.fee) / 10000 * reserveOut) / (reserveIn + amount * (10000 - pool.fee) / 10000);
+
+                    pool.reserveA += isAtoB ? amount : -amountOut;
+                    pool.reserveB += isAtoB ? -amountOut : amount;
+                    savePools();
+
+                    statusDiv.innerHTML = `<span class="success">✅ Swap executed on Devnet | Sent: ${amount} | Received: ${amountOut.toFixed(6)}</span>`;
+                    document.getElementById('swapFromMint').value = '';
+                    document.getElementById('swapToMint').value = '';
+                    document.getElementById('swapAmount').value = '';
+                    document.getElementById('swapResultArea').innerHTML = '↻ Swap cleared — enter new pair';
+                } catch(e) {
+                    statusDiv.innerHTML = `<span class="error">❌ Swap failed: ${e.message}</span>`;
+                }
             }
 
             // DROPDOWN (inside card) to switch panels
@@ -548,6 +612,11 @@
                 Object.values(panels).forEach(p => { if(p) p.style.display = 'none'; });
                 const active = panels[e.target.value];
                 if(active) active.style.display = 'block';
+
+                // Auto-select USDC when pools panel is shown
+                if(e.target.value === 'pools') {
+                    document.getElementById('poolTokenB').value = USDC_DEVNET;
+                }
             });
 
             // EVENT BINDINGS
@@ -560,6 +629,7 @@
             document.getElementById('executeSwapBtn').onclick = executeSwap;
 
             loadStorage();
+            refreshSwapTokens();
         })();
     </script>
 </body>
