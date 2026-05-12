@@ -440,19 +440,19 @@
             "type": "publicKey"
           },
           {
-            "name": "tokenCount",
+            "name": "token_count",
             "type": "u64"
           },
           {
-            "name": "poolCount",
+            "name": "pool_count",
             "type": "u64"
           },
           {
-            "name": "totalVolume",
+            "name": "total_volume",
             "type": "u128"
           },
           {
-            "name": "creationTimestamp",
+            "name": "creation_timestamp",
             "type": "i64"
           }
         ]
@@ -480,11 +480,11 @@
             "type": "u8"
           },
           {
-            "name": "totalSupply",
+            "name": "total_supply",
             "type": "u64"
           },
           {
-            "name": "circulatingSupply",
+            "name": "circulating_supply",
             "type": "u64"
           },
           {
@@ -492,11 +492,11 @@
             "type": "publicKey"
           },
           {
-            "name": "creationTimestamp",
+            "name": "creation_timestamp",
             "type": "i64"
           },
           {
-            "name": "logoUri",
+            "name": "logo_uri",
             "type": "string"
           },
           {
@@ -504,23 +504,23 @@
             "type": "string"
           },
           {
-            "name": "holdersCount",
+            "name": "holders_count",
             "type": "u64"
           },
           {
-            "name": "isVerified",
+            "name": "is_verified",
             "type": "bool"
           },
           {
-            "name": "autoBurnEnabled",
+            "name": "auto_burn_enabled",
             "type": "bool"
           },
           {
-            "name": "autoBurnEndTimestamp",
+            "name": "auto_burn_end_timestamp",
             "type": "i64"
           },
           {
-            "name": "burnedAmount",
+            "name": "burned_amount",
             "type": "u64"
           }
         ]
@@ -532,23 +532,23 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "tokenA",
+            "name": "token_a",
             "type": "publicKey"
           },
           {
-            "name": "tokenB",
+            "name": "token_b",
             "type": "publicKey"
           },
           {
-            "name": "tokenAAccount",
+            "name": "token_a_account",
             "type": "publicKey"
           },
           {
-            "name": "tokenBAccount",
+            "name": "token_b_account",
             "type": "publicKey"
           },
           {
-            "name": "feeBps",
+            "name": "fee_bps",
             "type": "u16"
           },
           {
@@ -556,15 +556,15 @@
             "type": "publicKey"
           },
           {
-            "name": "totalLiquidity",
+            "name": "total_liquidity",
             "type": "u64"
           },
           {
-            "name": "reserveA",
+            "name": "reserve_a",
             "type": "u64"
           },
           {
-            "name": "reserveB",
+            "name": "reserve_b",
             "type": "u64"
           },
           {
@@ -572,19 +572,19 @@
             "type": "publicKey"
           },
           {
-            "name": "creationTimestamp",
+            "name": "creation_timestamp",
             "type": "i64"
           },
           {
-            "name": "totalVolume",
+            "name": "total_volume",
             "type": "u128"
           },
           {
-            "name": "totalFeesCollected",
+            "name": "total_fees_collected",
             "type": "u128"
           },
           {
-            "name": "lpTokenSupply",
+            "name": "lp_token_supply",
             "type": "u64"
           }
         ]
@@ -604,28 +604,28 @@
             "type": "publicKey"
           },
           {
-            "name": "txType",
+            "name": "tx_type",
             "type": {
               "kind": "enum",
               "variants": [
                 {
-                  "name": "addLiquidity"
+                  "name": "AddLiquidity"
                 },
                 {
-                  "name": "removeLiquidity"
+                  "name": "RemoveLiquidity"
                 },
                 {
-                  "name": "swap"
+                  "name": "Swap"
                 }
               ]
             }
           },
           {
-            "name": "amountA",
+            "name": "amount_a",
             "type": "u64"
           },
           {
-            "name": "amountB",
+            "name": "amount_b",
             "type": "u64"
           },
           {
@@ -645,7 +645,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "tokenMint",
+            "name": "token_mint",
             "type": "publicKey"
           },
           {
@@ -657,7 +657,7 @@
             "type": "u64"
           },
           {
-            "name": "firstSeen",
+            "name": "first_seen",
             "type": "i64"
           }
         ]
