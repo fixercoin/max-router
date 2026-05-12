@@ -1,0 +1,60 @@
+.fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #0B0F1C;
+  border-bottom: 1px solid #1E2A3A;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+}
+
+.brand h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #A0AEC0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+}
+
+.wallet-section {
+  text-align: right;
+}
+
+.connect-wallet {
+  background: #1E293B;
+  border: 1px solid #334155;
+  color: #F1F5F9;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 20px;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: 0.2s;
+  font-family: inherit;
+}
+
+.connect-wallet:hover {
+  background: #2D3A4E;
+  border-color: #5B6E8C;
+}
+
+.wallet-status {
+  font-size: 11px;
+  color: #8E9BAE;
+  margin-top: 6px;
+}
+
+@media (max-width: 760px) {
+  .fixed-header {
+    padding: 12px 20px;
+  }
+}
