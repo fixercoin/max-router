@@ -1,25 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { getTokenMetadata, getTokenHolders } from '../solanaService';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { MaxDexClient } from '../maxDexClient';
+import { PublicKey } from '@solana/web3.js';
 import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
-  const { wallet, deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient, pools } = useAppContext();
+  const { deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient, pools } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [supply, setSupply] = useState<any>(null);
   const [holders, setHolders] = useState<any[]>([]);
   const [programMetadata, setProgramMetadata] = useState<any>(null);
   const [poolsWithToken, setPoolsWithToken] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadTokenDetails();
-    loadProgramMetadata();
-    findPoolsWithToken();
-  }, [selectedTokenForDetails, dexClient, pools]);
-
-  const loadTokenDetails = async () => {
+  const loadTokenDetails = useCallback(async () => {
     if (!selectedTokenForDetails) return;
     setLoading(true);
 
@@ -34,10 +27,10 @@ const TokenDetailsPage: React.FC = () => {
     }
 
     setLoading(false);
-  };
+  }, [selectedTokenForDetails]);
 
   // NEW: Load metadata from your MAX DEX program
-  const loadProgramMetadata = async () => {
+  const loadProgramMetadata = useCallback(async () => {
     if (!dexClient || !selectedTokenForDetails) return;
 
     try {
@@ -48,15 +41,21 @@ const TokenDetailsPage: React.FC = () => {
     } catch (e) {
       console.log("No program metadata found (token not deployed via MAX DEX)");
     }
-  };
+  }, [dexClient, selectedTokenForDetails]);
 
   // NEW: Find pools containing this token
-  const findPoolsWithToken = () => {
+  const findPoolsWithToken = useCallback(() => {
     const tokenPools = pools.filter(
       (p) => p.tokenA === selectedTokenForDetails || p.tokenB === selectedTokenForDetails
     );
     setPoolsWithToken(tokenPools);
-  };
+  }, [pools, selectedTokenForDetails]);
+
+  useEffect(() => {
+    loadTokenDetails();
+    loadProgramMetadata();
+    findPoolsWithToken();
+  }, [loadTokenDetails, loadProgramMetadata, findPoolsWithToken]);
 
   const tokenData = deployedTokens.find((t) => t.mint === selectedTokenForDetails);
 

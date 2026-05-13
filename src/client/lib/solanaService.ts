@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey, Keypair, Connection } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import idl from "../../idl.json";
 
 export const DEX_PROGRAM_ID = new PublicKey("36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk");
@@ -133,11 +133,11 @@ export class MaxDexClient {
     tokenA: PublicKey,
     tokenB: PublicKey
   ): Promise<string> {
-    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const poolAccount = await this.program.account.poolAccount.fetch(pool) as any;
     const userTokenA = await getAssociatedTokenAddress(tokenA, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(tokenB, this.provider.wallet.publicKey);
     const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint as PublicKey, this.provider.wallet.publicKey);
-    
+
     const tx = await this.program.methods
       .addLiquidity(new anchor.BN(amountA), new anchor.BN(amountB))
       .accounts({
@@ -146,13 +146,13 @@ export class MaxDexClient {
         userTokenB: userTokenB,
         userLpToken: userLpToken,
         pool: pool,
-        poolTokenAVault: poolAccount.tokenAVault,
-        poolTokenBVault: poolAccount.tokenBVault,
-        lpMint: poolAccount.lpMint,
+        poolTokenAVault: poolAccount.tokenAVault as PublicKey,
+        poolTokenBVault: poolAccount.tokenBVault as PublicKey,
+        lpMint: poolAccount.lpMint as PublicKey,
         poolAuthority: this.getPoolAuthorityAddress(pool),
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
-      })
+      } as any)
       .rpc();
     
     console.log("✅ Liquidity Added");
@@ -161,11 +161,11 @@ export class MaxDexClient {
 
   // 6. Remove Liquidity (ADD THIS)
   async removeLiquidity(pool: PublicKey, lpAmount: number): Promise<string> {
-    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const poolAccount = await this.program.account.poolAccount.fetch(pool) as any;
     const userTokenA = await getAssociatedTokenAddress(poolAccount.tokenA as PublicKey, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(poolAccount.tokenB as PublicKey, this.provider.wallet.publicKey);
     const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint as PublicKey, this.provider.wallet.publicKey);
-    
+
     const tx = await this.program.methods
       .removeLiquidity(new anchor.BN(lpAmount))
       .accounts({
@@ -174,13 +174,13 @@ export class MaxDexClient {
         userTokenB: userTokenB,
         userLpToken: userLpToken,
         pool: pool,
-        poolTokenAVault: poolAccount.tokenAVault,
-        poolTokenBVault: poolAccount.tokenBVault,
-        lpMint: poolAccount.lpMint,
+        poolTokenAVault: poolAccount.tokenAVault as PublicKey,
+        poolTokenBVault: poolAccount.tokenBVault as PublicKey,
+        lpMint: poolAccount.lpMint as PublicKey,
         poolAuthority: this.getPoolAuthorityAddress(pool),
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
-      })
+      } as any)
       .rpc();
     
     console.log("✅ Liquidity Removed");
@@ -195,10 +195,18 @@ export class MaxDexClient {
     amountIn: number,
     minAmountOut: number
   ): Promise<string> {
-    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    if (!this.dexState) {
+      const [address] = await PublicKey.findProgramAddress(
+        [Buffer.from("dex_state")],
+        DEX_PROGRAM_ID
+      );
+      this.dexState = address;
+    }
+
+    const poolAccount = await this.program.account.poolAccount.fetch(pool) as any;
     const userTokenIn = await getAssociatedTokenAddress(tokenIn, this.provider.wallet.publicKey);
     const userTokenOut = await getAssociatedTokenAddress(tokenOut, this.provider.wallet.publicKey);
-    
+
     const tx = await this.program.methods
       .swap(new anchor.BN(amountIn), new anchor.BN(minAmountOut))
       .accounts({
@@ -206,15 +214,15 @@ export class MaxDexClient {
         userTokenIn: userTokenIn,
         userTokenOut: userTokenOut,
         pool: pool,
-        poolTokenAVault: poolAccount.tokenAVault,
-        poolTokenBVault: poolAccount.tokenBVault,
+        poolTokenAVault: poolAccount.tokenAVault as PublicKey,
+        poolTokenBVault: poolAccount.tokenBVault as PublicKey,
         tokenIn: tokenIn,
         tokenOut: tokenOut,
         poolAuthority: this.getPoolAuthorityAddress(pool),
         dexState: this.dexState,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
-      })
+      } as any)
       .rpc();
     
     console.log("✅ Swap Completed");
@@ -223,8 +231,16 @@ export class MaxDexClient {
 
   // 8. Verify Token (ADD THIS)
   async verifyToken(mint: PublicKey): Promise<string> {
+    if (!this.dexState) {
+      const [address] = await PublicKey.findProgramAddress(
+        [Buffer.from("dex_state")],
+        DEX_PROGRAM_ID
+      );
+      this.dexState = address;
+    }
+
     const metadataAddress = await this.getTokenMetadataAddress(mint);
-    
+
     const tx = await this.program.methods
       .verifyToken()
       .accounts({
@@ -282,37 +298,24 @@ export class MaxDexClient {
 
 // Wallet Connection
 export async function connectWallet(): Promise<any> {
-  if (!window.solana) {
+  const win = window as any;
+  if (!win.solana) {
     throw new Error("Please install Phantom wallet");
   }
-  const resp = await window.solana.connect();
-  return window.solana;
+  await win.solana.connect();
+  return win.solana;
 }
 
 // Get Token Metadata
 export async function getTokenMetadata(mint: string): Promise<any> {
-  try {
-    const connection = new Connection("https://api.devnet.solana.com");
-    const mintPubkey = new PublicKey(mint);
-    return {
-      mint: mint,
-      fetched: true,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (e) {
-    console.error("Failed to fetch token metadata:", e);
-    return null;
-  }
+  return {
+    mint: mint,
+    fetched: true,
+    timestamp: new Date().toISOString(),
+  };
 }
 
 // Get Token Holders
-export async function getTokenHolders(mint: string): Promise<any[]> {
-  try {
-    const connection = new Connection("https://api.devnet.solana.com");
-    const mintPubkey = new PublicKey(mint);
-    return [];
-  } catch (e) {
-    console.error("Failed to fetch token holders:", e);
-    return [];
-  }
+export async function getTokenHolders(_mint: string): Promise<any[]> {
+  return [];
 }

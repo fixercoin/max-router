@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { MaxDexClient } from '../maxDexClient';
+import { PublicKey } from '@solana/web3.js';
 import './Page.css';
 
 const LiquidityPoolsPage: React.FC = () => {
@@ -17,13 +16,9 @@ const LiquidityPoolsPage: React.FC = () => {
   const [swapAmount, setSwapAmount] = useState('');
   const [swapStatus, setSwapStatus] = useState('');
 
-  useEffect(() => {
-    loadPoolsFromChain();
-  }, [wallet, dexClient]);
-
-  const loadPoolsFromChain = async () => {
+  const loadPoolsFromChain = useCallback(async () => {
     if (!dexClient) return;
-    
+
     try {
       const dexState = await dexClient.getDexState();
       // Fetch all pools (you'd need to track pool addresses)
@@ -31,7 +26,11 @@ const LiquidityPoolsPage: React.FC = () => {
     } catch (e) {
       console.error("Failed to load pools:", e);
     }
-  };
+  }, [dexClient]);
+
+  useEffect(() => {
+    loadPoolsFromChain();
+  }, [loadPoolsFromChain]);
 
   const handleCreatePool = async () => {
     if (!wallet || !dexClient) {
