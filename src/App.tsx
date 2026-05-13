@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Header from './components/Header';
+import Header from '../components/Header';
 import DeployTokenPage from './pages/DeployTokenPage';
 import LiquidityPoolsPage from './pages/LiquidityPoolsPage';
 import SwapRouterPage from './pages/SwapRouterPage';
