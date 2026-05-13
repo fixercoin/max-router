@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
-import { MaxDexClient } from '../lib/maxDexClient';
+import { useAppContext } from '../../context/AppContext';
+import { MaxDexClient } from '../maxDexClient';
 import { Connection, PublicKey } from '@solana/web3.js';
 import './Page.css';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../../context/AppContext';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { MaxDexClient } from '../lib/maxDexClient';
+import { MaxDexClient } from '../maxDexClient';
 import './Page.css';
 
 const LiquidityPoolsPage: React.FC = () => {
