@@ -1,5 +1,5 @@
 import React from 'react';
-import { PageType } from '../App';
+import { PageType } from '../../App';
 import { MaxDexClient } from '../lib/maxDexClient';
 
 export interface AppContextType {
