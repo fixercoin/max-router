@@ -18,26 +18,26 @@ export class MaxDexClient {
     this.program = new Program(idl as any, DEX_PROGRAM_ID, this.provider);
   }
 
-  // 1. Initialize DEX
   async initializeDex(): Promise<string> {
-    const dexKeypair = Keypair.generate();
-    this.dexState = dexKeypair.publicKey;
+    const [dexState] = await PublicKey.findProgramAddress(
+      [Buffer.from("dex_state")],
+      DEX_PROGRAM_ID
+    );
+    this.dexState = dexState;
     
     const tx = await this.program.methods
       .initializeDex(this.provider.wallet.publicKey)
       .accounts({
         authority: this.provider.wallet.publicKey,
-        dexState: this.dexState,
+        dexState: dexState,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([dexKeypair])
       .rpc();
     
-    console.log("✅ DEX Initialized:", this.dexState.toString());
+    console.log("✅ DEX Initialized:", dexState.toString());
     return tx;
   }
 
-  // 2. Deploy Token
   async deployToken(name: string, symbol: string, decimals: number): Promise<PublicKey> {
     if (!this.dexState) {
       const [address] = await PublicKey.findProgramAddress(
@@ -48,30 +48,35 @@ export class MaxDexClient {
     }
     
     const mintKeypair = Keypair.generate();
-    const metadataKeypair = Keypair.generate();
+    const [tokenMetadata] = await PublicKey.findProgramAddress(
+      [Buffer.from("token_metadata"), mintKeypair.publicKey.toBuffer()],
+      DEX_PROGRAM_ID
+    );
     
     await this.program.methods
       .deployToken(name, symbol, decimals)
       .accounts({
         authority: this.provider.wallet.publicKey,
         mint: mintKeypair.publicKey,
-        tokenMetadata: metadataKeypair.publicKey,
+        tokenMetadata: tokenMetadata,
         dexState: this.dexState,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([mintKeypair, metadataKeypair])
+      .signers([mintKeypair])
       .rpc();
     
     console.log("✅ Token Deployed:", mintKeypair.publicKey.toString());
     return mintKeypair.publicKey;
   }
 
-  // 3. Mint Tokens
   async mintTokens(mint: PublicKey, amount: number): Promise<string> {
     const tokenAccount = await getAssociatedTokenAddress(mint, this.provider.wallet.publicKey);
-    const metadataAddress = await this.getTokenMetadataAddress(mint);
+    const [tokenMetadata] = await PublicKey.findProgramAddress(
+      [Buffer.from("token_metadata"), mint.toBuffer()],
+      DEX_PROGRAM_ID
+    );
     
     const tx = await this.program.methods
       .mintTokens(new anchor.BN(amount))
@@ -79,7 +84,7 @@ export class MaxDexClient {
         authority: this.provider.wallet.publicKey,
         mint: mint,
         tokenAccount: tokenAccount,
-        tokenMetadata: metadataAddress,
+        tokenMetadata: tokenMetadata,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
@@ -88,7 +93,6 @@ export class MaxDexClient {
     return tx;
   }
 
-  // 4. Create Pool (ADD THIS)
   async createPool(tokenA: PublicKey, tokenB: PublicKey, feeBps: number): Promise<PublicKey> {
     if (!this.dexState) {
       const [address] = await PublicKey.findProgramAddress(
@@ -98,34 +102,43 @@ export class MaxDexClient {
       this.dexState = address;
     }
     
-    const poolKeypair = Keypair.generate();
-    const tokenAVault = Keypair.generate();
-    const tokenBVault = Keypair.generate();
-    const lpMint = Keypair.generate();
+    const [pool] = await PublicKey.findProgramAddress(
+      [Buffer.from("pool"), tokenA.toBuffer(), tokenB.toBuffer()],
+      DEX_PROGRAM_ID
+    );
+    
+    const [poolAuthority] = await PublicKey.findProgramAddress(
+      [Buffer.from("pool_authority"), pool.toBuffer()],
+      DEX_PROGRAM_ID
+    );
+
+    const lpMintKeypair = Keypair.generate();
+    const tokenAVaultKeypair = Keypair.generate();
+    const tokenBVaultKeypair = Keypair.generate();
     
     await this.program.methods
       .createPool(feeBps)
       .accounts({
         authority: this.provider.wallet.publicKey,
-        pool: poolKeypair.publicKey,
+        pool: pool,
         tokenA: tokenA,
         tokenB: tokenB,
-        tokenAVault: tokenAVault.publicKey,
-        tokenBVault: tokenBVault.publicKey,
-        lpMint: lpMint.publicKey,
+        tokenAVault: tokenAVaultKeypair.publicKey,
+        tokenBVault: tokenBVaultKeypair.publicKey,
+        lpMint: lpMintKeypair.publicKey,
+        poolAuthority: poolAuthority,
         dexState: this.dexState,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([poolKeypair, tokenAVault, tokenBVault, lpMint])
+      .signers([lpMintKeypair, tokenAVaultKeypair, tokenBVaultKeypair])
       .rpc();
     
-    console.log("✅ Pool Created:", poolKeypair.publicKey.toString());
-    return poolKeypair.publicKey;
+    console.log("✅ Pool Created:", pool.toString());
+    return pool;
   }
 
-  // 5. Add Liquidity (ADD THIS)
   async addLiquidity(
     pool: PublicKey,
     amountA: number,
@@ -137,6 +150,7 @@ export class MaxDexClient {
     const userTokenA = await getAssociatedTokenAddress(tokenA, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(tokenB, this.provider.wallet.publicKey);
     const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint as PublicKey, this.provider.wallet.publicKey);
+    const poolAuthority = this.getPoolAuthorityAddress(pool);
 
     const tx = await this.program.methods
       .addLiquidity(new anchor.BN(amountA), new anchor.BN(amountB))
@@ -149,7 +163,7 @@ export class MaxDexClient {
         poolTokenAVault: poolAccount.tokenAVault as PublicKey,
         poolTokenBVault: poolAccount.tokenBVault as PublicKey,
         lpMint: poolAccount.lpMint as PublicKey,
-        poolAuthority: this.getPoolAuthorityAddress(pool),
+        poolAuthority: poolAuthority,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
       } as any)
@@ -159,12 +173,12 @@ export class MaxDexClient {
     return tx;
   }
 
-  // 6. Remove Liquidity (ADD THIS)
   async removeLiquidity(pool: PublicKey, lpAmount: number): Promise<string> {
     const poolAccount = await this.program.account.poolAccount.fetch(pool) as any;
     const userTokenA = await getAssociatedTokenAddress(poolAccount.tokenA as PublicKey, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(poolAccount.tokenB as PublicKey, this.provider.wallet.publicKey);
     const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint as PublicKey, this.provider.wallet.publicKey);
+    const poolAuthority = this.getPoolAuthorityAddress(pool);
 
     const tx = await this.program.methods
       .removeLiquidity(new anchor.BN(lpAmount))
@@ -177,7 +191,7 @@ export class MaxDexClient {
         poolTokenAVault: poolAccount.tokenAVault as PublicKey,
         poolTokenBVault: poolAccount.tokenBVault as PublicKey,
         lpMint: poolAccount.lpMint as PublicKey,
-        poolAuthority: this.getPoolAuthorityAddress(pool),
+        poolAuthority: poolAuthority,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
       } as any)
@@ -187,7 +201,6 @@ export class MaxDexClient {
     return tx;
   }
 
-  // 7. Swap (ADD THIS)
   async swap(
     pool: PublicKey,
     tokenIn: PublicKey,
@@ -206,6 +219,7 @@ export class MaxDexClient {
     const poolAccount = await this.program.account.poolAccount.fetch(pool) as any;
     const userTokenIn = await getAssociatedTokenAddress(tokenIn, this.provider.wallet.publicKey);
     const userTokenOut = await getAssociatedTokenAddress(tokenOut, this.provider.wallet.publicKey);
+    const poolAuthority = this.getPoolAuthorityAddress(pool);
 
     const tx = await this.program.methods
       .swap(new anchor.BN(amountIn), new anchor.BN(minAmountOut))
@@ -218,7 +232,7 @@ export class MaxDexClient {
         poolTokenBVault: poolAccount.tokenBVault as PublicKey,
         tokenIn: tokenIn,
         tokenOut: tokenOut,
-        poolAuthority: this.getPoolAuthorityAddress(pool),
+        poolAuthority: poolAuthority,
         dexState: this.dexState,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -229,7 +243,6 @@ export class MaxDexClient {
     return tx;
   }
 
-  // 8. Verify Token (ADD THIS)
   async verifyToken(mint: PublicKey): Promise<string> {
     if (!this.dexState) {
       const [address] = await PublicKey.findProgramAddress(
@@ -239,13 +252,16 @@ export class MaxDexClient {
       this.dexState = address;
     }
 
-    const metadataAddress = await this.getTokenMetadataAddress(mint);
+    const [tokenMetadata] = await PublicKey.findProgramAddress(
+      [Buffer.from("token_metadata"), mint.toBuffer()],
+      DEX_PROGRAM_ID
+    );
 
     const tx = await this.program.methods
       .verifyToken()
       .accounts({
         authority: this.provider.wallet.publicKey,
-        tokenMetadata: metadataAddress,
+        tokenMetadata: tokenMetadata,
         dexState: this.dexState,
       })
       .rpc();
@@ -254,7 +270,6 @@ export class MaxDexClient {
     return tx;
   }
 
-  // Helper: Get Token Metadata Address
   async getTokenMetadataAddress(mint: PublicKey): Promise<PublicKey> {
     const [address] = await PublicKey.findProgramAddress(
       [Buffer.from("token_metadata"), mint.toBuffer()],
@@ -263,16 +278,22 @@ export class MaxDexClient {
     return address;
   }
 
-  // Helper: Get Pool Authority PDA
-  getPoolAuthorityAddress(pool: PublicKey): PublicKey {
+  private getPoolAuthorityAddress(pool: PublicKey): PublicKey {
     const [address] = PublicKey.findProgramAddressSync(
-      [Buffer.from("pool"), pool.toBuffer()],
+      [Buffer.from("pool_authority"), pool.toBuffer()],
       DEX_PROGRAM_ID
     );
     return address;
   }
 
-  // Get DEX State
+  async getPoolAddress(tokenA: PublicKey, tokenB: PublicKey): Promise<PublicKey> {
+    const [address] = await PublicKey.findProgramAddress(
+      [Buffer.from("pool"), tokenA.toBuffer(), tokenB.toBuffer()],
+      DEX_PROGRAM_ID
+    );
+    return address;
+  }
+
   async getDexState(): Promise<any> {
     if (!this.dexState) {
       const [address] = await PublicKey.findProgramAddress(
@@ -284,19 +305,16 @@ export class MaxDexClient {
     return this.program.account.dexState.fetch(this.dexState);
   }
 
-  // Get Pool Account
   async getPoolAccount(pool: PublicKey): Promise<any> {
     return this.program.account.poolAccount.fetch(pool);
   }
 
-  // Get Token Metadata
   async getTokenMetadata(mint: PublicKey): Promise<any> {
     const metadataAddress = await this.getTokenMetadataAddress(mint);
     return this.program.account.tokenMetadata.fetch(metadataAddress);
   }
 }
 
-// Wallet Connection
 export async function connectWallet(): Promise<any> {
   const win = window as any;
   if (!win.solana) {
@@ -306,7 +324,6 @@ export async function connectWallet(): Promise<any> {
   return win.solana;
 }
 
-// Get Token Metadata
 export async function getTokenMetadata(mint: string): Promise<any> {
   return {
     mint: mint,
@@ -315,7 +332,6 @@ export async function getTokenMetadata(mint: string): Promise<any> {
   };
 }
 
-// Get Token Holders
 export async function getTokenHolders(_mint: string): Promise<any[]> {
   return [];
 }

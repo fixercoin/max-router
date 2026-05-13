@@ -442,6 +442,10 @@
           {
             "name": "creationTimestamp",
             "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
@@ -486,6 +490,10 @@
           {
             "name": "isVerified",
             "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
@@ -546,6 +554,14 @@
           {
             "name": "lpSupply",
             "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "authorityBump",
+            "type": "u8"
           }
         ]
       }
