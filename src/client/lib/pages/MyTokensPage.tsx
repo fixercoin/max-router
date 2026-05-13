@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAppContext } from '../context/AppContext';
+import React, { Fragment } from 'react';
+import { useAppContext } from '../../context/AppContext';
 import './Page.css';
 
 const MyTokensPage: React.FC = () => {
@@ -53,10 +53,12 @@ const MyTokensPage: React.FC = () => {
                     </span>
                   )}
                   {t.circulatingSupply && (
-                    <br />
-                    <span style={{ fontSize: '10px', color: '#6C809C' }}>
-                      Supply: {parseInt(t.circulatingSupply) / Math.pow(10, t.decimals)} {t.symbol}
-                    </span>
+                    <Fragment>
+                      <br />
+                      <span style={{ fontSize: '10px', color: '#6C809C' }}>
+                        Supply: {parseInt(t.circulatingSupply) / Math.pow(10, t.decimals)} {t.symbol}
+                      </span>
+                    </Fragment>
                   )}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
