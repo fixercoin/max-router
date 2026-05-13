@@ -1,3 +1,6 @@
+
+import React from 'react';
+
 import React, { Fragment } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import './Page.css';
@@ -48,16 +51,23 @@ const MyTokensPage: React.FC = () => {
                     Mint: {t.mint.slice(0, 28)}…
                   </span>
                   {t.isVerified && (
-                    <span style={{ fontSize: '10px', color: '#4CAF50', marginLeft: '8px' }}>
-                      ✓ Verified
-                    </span>
+                    <>
+                      <br />
+                      <span style={{ fontSize: '10px', color: '#4CAF50', marginLeft: '8px' }}>
+                        ✓ Verified
+                      </span>
+                    </>
                   )}
                   {t.circulatingSupply && (
+                    <>
+
                     <Fragment>
                       <br />
                       <span style={{ fontSize: '10px', color: '#6C809C' }}>
                         Supply: {parseInt(t.circulatingSupply) / Math.pow(10, t.decimals)} {t.symbol}
                       </span>
+                    </>
+
                     </Fragment>
                   )}
                 </span>
