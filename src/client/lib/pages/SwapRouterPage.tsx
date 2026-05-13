@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { MaxDexClient } from '../maxDexClient';
+import { PublicKey } from '@solana/web3.js';
 import './Page.css';
 
 const SwapRouterPage: React.FC = () => {

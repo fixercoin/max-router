@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { MaxDexClient } from '../maxDexClient';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 import './Page.css';
 
 const DeployTokenPage: React.FC = () => {
@@ -68,7 +68,7 @@ const DeployTokenPage: React.FC = () => {
 
       // Get token metadata from your program
       const metadataAddress = await client.getTokenMetadataAddress(mintAddress);
-      const metadata = await client.program.account.tokenMetadata.fetch(metadataAddress);
+      const metadata = await client.program.account.tokenMetadata.fetch(metadataAddress) as any;
 
       // Save to deployed tokens
       const newTokens = [
@@ -79,7 +79,7 @@ const DeployTokenPage: React.FC = () => {
           symbol: tokenSymbol,
           decimals: tokenDecimals,
           totalSupply: tokenSupply,
-          circulatingSupply: metadata.circulatingSupply.toString(),
+          circulatingSupply: (metadata.circulatingSupply as any).toString(),
           metadataAddress: metadataAddress.toString(),
         },
       ];
