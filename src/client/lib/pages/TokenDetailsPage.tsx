@@ -6,7 +6,7 @@ import { MaxDexClient } from '../maxDexClient';
 import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
-  const { wallet, deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient } = useAppContext();
+  const { wallet, deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient, pools } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [supply, setSupply] = useState<any>(null);
   const [holders, setHolders] = useState<any[]>([]);
@@ -17,7 +17,7 @@ const TokenDetailsPage: React.FC = () => {
     loadTokenDetails();
     loadProgramMetadata();
     findPoolsWithToken();
-  }, [selectedTokenForDetails, dexClient]);
+  }, [selectedTokenForDetails, dexClient, pools]);
 
   const loadTokenDetails = async () => {
     if (!selectedTokenForDetails) return;
@@ -39,7 +39,7 @@ const TokenDetailsPage: React.FC = () => {
   // NEW: Load metadata from your MAX DEX program
   const loadProgramMetadata = async () => {
     if (!dexClient || !selectedTokenForDetails) return;
-    
+
     try {
       const mintPubkey = new PublicKey(selectedTokenForDetails);
       const metadataAddress = await dexClient.getTokenMetadataAddress(mintPubkey);
@@ -51,8 +51,7 @@ const TokenDetailsPage: React.FC = () => {
   };
 
   // NEW: Find pools containing this token
-  const findPoolsWithToken = async () => {
-    const { pools } = useAppContext();
+  const findPoolsWithToken = () => {
     const tokenPools = pools.filter(
       (p) => p.tokenA === selectedTokenForDetails || p.tokenB === selectedTokenForDetails
     );
