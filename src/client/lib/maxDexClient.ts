@@ -6,6 +6,18 @@ import idl from '../../idl.json';
 
 export const DEX_PROGRAM_ID = new PublicKey("36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk");
 
+interface PoolAccount {
+  tokenA: PublicKey;
+  tokenB: PublicKey;
+  lpMint: PublicKey;
+  tokenAVault: PublicKey;
+  tokenBVault: PublicKey;
+  feeAccount: PublicKey;
+  feeBps: number;
+  authority: PublicKey;
+  lpTokenSupply: anchor.BN;
+}
+
 export class MaxDexClient {
   program: Program;
   provider: anchor.AnchorProvider;
@@ -130,7 +142,7 @@ export class MaxDexClient {
     tokenA: PublicKey,
     tokenB: PublicKey
   ): Promise<string> {
-    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const poolAccount = await this.program.account.poolAccount.fetch(pool) as PoolAccount;
     const userTokenA = await getAssociatedTokenAddress(tokenA, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(tokenB, this.provider.wallet.publicKey);
     const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint, this.provider.wallet.publicKey);
@@ -157,7 +169,7 @@ export class MaxDexClient {
   }
 
   async removeLiquidity(pool: PublicKey, lpAmount: number): Promise<string> {
-    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const poolAccount = await this.program.account.poolAccount.fetch(pool) as PoolAccount;
     const userTokenA = await getAssociatedTokenAddress(poolAccount.tokenA, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(poolAccount.tokenB, this.provider.wallet.publicKey);
     const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint, this.provider.wallet.publicKey);
@@ -190,7 +202,7 @@ export class MaxDexClient {
     amountIn: number,
     minAmountOut: number
   ): Promise<string> {
-    const poolAccount = await this.program.account.poolAccount.fetch(pool);
+    const poolAccount = await this.program.account.poolAccount.fetch(pool) as PoolAccount;
     const userTokenIn = await getAssociatedTokenAddress(tokenIn, this.provider.wallet.publicKey);
     const userTokenOut = await getAssociatedTokenAddress(tokenOut, this.provider.wallet.publicKey);
     
