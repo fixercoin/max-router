@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Header from '../components/Header';
-import DeployTokenPage from '@pages/DeployTokenPage';
-import LiquidityPoolsPage from '@pages/LiquidityPoolsPage';
-import SwapRouterPage from '@pages/SwapRouterPage';
-import MyTokensPage from '@pages/MyTokensPage';
-import TokenDetailsPage from '@pages/TokenDetailsPage';
-import { AppContext, AppContextType } from '../context/AppContext';
-import { MaxDexClient } from '../lib/maxDexClient';
+import Header from './components/Header';
+import DeployTokenPage from './pages/DeployTokenPage';
+import LiquidityPoolsPage from './pages/LiquidityPoolsPage';
+import SwapRouterPage from './pages/SwapRouterPage';
+import MyTokensPage from './pages/MyTokensPage';
+import TokenDetailsPage from './pages/TokenDetailsPage';
+import { AppContext, AppContextType } from './context/AppContext';
+import { MaxDexClient } from './lib/maxDexClient';
 
 export type PageType = 'deploy' | 'pools' | 'swap' | 'tokens' | 'details';
 
