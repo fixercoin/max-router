@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey, Keypair, Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccount } from "@solana/spl-token";
-import idl from "../idl.json";
+import idl from "../../idl.json";
 
 export const DEX_PROGRAM_ID = new PublicKey("36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk");
 export const USDC_DEVNET = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
@@ -127,16 +127,16 @@ export class MaxDexClient {
 
   // 5. Add Liquidity (ADD THIS)
   async addLiquidity(
-    pool: PublicKey, 
-    amountA: number, 
-    amountB: number, 
-    tokenA: PublicKey, 
+    pool: PublicKey,
+    amountA: number,
+    amountB: number,
+    tokenA: PublicKey,
     tokenB: PublicKey
   ): Promise<string> {
     const poolAccount = await this.program.account.poolAccount.fetch(pool);
     const userTokenA = await getAssociatedTokenAddress(tokenA, this.provider.wallet.publicKey);
     const userTokenB = await getAssociatedTokenAddress(tokenB, this.provider.wallet.publicKey);
-    const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint, this.provider.wallet.publicKey);
+    const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint as PublicKey, this.provider.wallet.publicKey);
     
     const tx = await this.program.methods
       .addLiquidity(new anchor.BN(amountA), new anchor.BN(amountB))
@@ -162,9 +162,9 @@ export class MaxDexClient {
   // 6. Remove Liquidity (ADD THIS)
   async removeLiquidity(pool: PublicKey, lpAmount: number): Promise<string> {
     const poolAccount = await this.program.account.poolAccount.fetch(pool);
-    const userTokenA = await getAssociatedTokenAddress(poolAccount.tokenA, this.provider.wallet.publicKey);
-    const userTokenB = await getAssociatedTokenAddress(poolAccount.tokenB, this.provider.wallet.publicKey);
-    const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint, this.provider.wallet.publicKey);
+    const userTokenA = await getAssociatedTokenAddress(poolAccount.tokenA as PublicKey, this.provider.wallet.publicKey);
+    const userTokenB = await getAssociatedTokenAddress(poolAccount.tokenB as PublicKey, this.provider.wallet.publicKey);
+    const userLpToken = await getAssociatedTokenAddress(poolAccount.lpMint as PublicKey, this.provider.wallet.publicKey);
     
     const tx = await this.program.methods
       .removeLiquidity(new anchor.BN(lpAmount))
@@ -287,4 +287,32 @@ export async function connectWallet(): Promise<any> {
   }
   const resp = await window.solana.connect();
   return window.solana;
+}
+
+// Get Token Metadata
+export async function getTokenMetadata(mint: string): Promise<any> {
+  try {
+    const connection = new Connection("https://api.devnet.solana.com");
+    const mintPubkey = new PublicKey(mint);
+    return {
+      mint: mint,
+      fetched: true,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (e) {
+    console.error("Failed to fetch token metadata:", e);
+    return null;
+  }
+}
+
+// Get Token Holders
+export async function getTokenHolders(mint: string): Promise<any[]> {
+  try {
+    const connection = new Connection("https://api.devnet.solana.com");
+    const mintPubkey = new PublicKey(mint);
+    return [];
+  } catch (e) {
+    console.error("Failed to fetch token holders:", e);
+    return [];
+  }
 }

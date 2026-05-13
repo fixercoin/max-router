@@ -26,6 +26,7 @@ interface TokenSecurity {
 }
 
 export const Security: React.FC = () => {
+  const [selectedTab, setSelectedTab] = useState<'program' | 'tokens'>('program');
   const [programStatus, setProgramStatus] = useState<ProgramStatus>({
     verificationStatus: 'verified',
     onChainHash: '36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk', // Your program ID
