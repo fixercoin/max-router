@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
-import { getTokenMetadata, getTokenHolders } from '../lib/solanaService';
+import { useAppContext } from '../../context/AppContext';
+import { getTokenMetadata, getTokenHolders } from '../solanaService';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { MaxDexClient } from '../lib/maxDexClient';
+import { MaxDexClient } from '../maxDexClient';
 import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
