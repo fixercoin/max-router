@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { MaxDexClient } from '../maxDexClient';
 import { Connection } from '@solana/web3.js';
-import './Page.css';
 
 const DeployTokenPage: React.FC = () => {
   const { wallet, deployedTokens, setDeployedTokens, dexClient, setDexClient } = useAppContext();
