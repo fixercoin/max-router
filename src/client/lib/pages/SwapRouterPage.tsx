@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { PublicKey } from '@solana/web3.js';
+import { saveTransaction, getExplorerUrl } from '../transactionUtils';
 import './Page.css';
 
 const SwapRouterPage: React.FC = () => {
@@ -102,26 +103,28 @@ const SwapRouterPage: React.FC = () => {
       const isAtoB = selectedPool.tokenA === fromToken.mint;
       const reserveIn = isAtoB ? selectedPool.reserveA : selectedPool.reserveB;
       const reserveOut = isAtoB ? selectedPool.reserveB : selectedPool.reserveA;
-      
+
       // Calculate minimum amount out with 1% slippage tolerance
       const rawAmountIn = amount * Math.pow(10, fromToken.decimals);
       const feeMultiplier = (10000 - selectedPool.fee) / 10000;
       const amountInWithFee = rawAmountIn * feeMultiplier;
       const rawAmountOut = (amountInWithFee * reserveOut) / (reserveIn + amountInWithFee);
       const minAmountOut = rawAmountOut * 0.99; // 1% slippage tolerance
-      
+
       const poolPubkey = new PublicKey(selectedPool.poolAddress);
       const tokenInPubkey = new PublicKey(fromToken.mint);
       const tokenOutPubkey = new PublicKey(toToken.mint);
-      
-      setSwapStatus('⏳ Executing swap on MAX DEX...');
-      
-      await dexClient.swap(poolPubkey, tokenInPubkey, tokenOutPubkey, rawAmountIn, minAmountOut);
-      
+
+      setSwapStatus('⏳ Requesting transaction signature...');
+
+      const txHash = await dexClient.swap(poolPubkey, tokenInPubkey, tokenOutPubkey, rawAmountIn, minAmountOut);
+
+      setSwapStatus('⏳ Confirming transaction on blockchain...');
+
       // Refresh pool data
       const updatedPool = await dexClient.program.account.poolAccount.fetch(poolPubkey);
-      const updatedPools = pools.map(p => 
-        p.poolAddress === selectedPool.poolAddress 
+      const updatedPools = pools.map(p =>
+        p.poolAddress === selectedPool.poolAddress
           ? {
               ...p,
               reserveA: updatedPool.reserveA,
@@ -132,19 +135,34 @@ const SwapRouterPage: React.FC = () => {
           : p
       );
       setPools(updatedPools);
-      
+
       const outputAmount = ((rawAmountOut / Math.pow(10, toToken.decimals))).toFixed(6);
-      
+      const explorerUrl = getExplorerUrl(txHash, 'devnet');
+
+      // Save transaction to history
+      saveTransaction({
+        id: Date.now().toString(),
+        hash: txHash,
+        type: 'swap',
+        fromToken: fromToken.symbol,
+        toToken: toToken.symbol,
+        amount: amount.toString(),
+        status: 'confirmed',
+        timestamp: Date.now(),
+        explorerUrl
+      });
+
       setSwapStatus(
         `✅ Swap executed successfully!\n` +
         `📤 Sent: ${amount} ${fromToken.symbol}\n` +
         `📥 Received: ${outputAmount} ${toToken.symbol}\n` +
-        `💰 Fee: ${selectedPool.fee / 100}%`
+        `💰 Fee: ${selectedPool.fee / 100}%\n\n` +
+        `🔗 View on Explorer: ${explorerUrl}`
       );
-      
+
       setSwapAmount('');
       setEstimatedOutput('');
-      
+
     } catch (e: any) {
       setSwapStatus(`❌ Swap failed: ${e.message}`);
       console.error('Swap error:', e);
@@ -233,7 +251,25 @@ const SwapRouterPage: React.FC = () => {
       </div>
       
       <div className="status-area" style={{ whiteSpace: 'pre-line', marginTop: '10px' }}>
-        {swapStatus}
+        {swapStatus && (
+          <>
+            {swapStatus.split('\n\n')[0]}
+            {swapStatus.includes('View on Explorer') && (
+              <div style={{ marginTop: '10px' }}>
+                <a
+                  href={swapStatus.split('\n').find(l => l.includes('View on Explorer'))?.replace('🔗 View on Explorer: ', '') || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="explorer-link"
+                  style={{ color: '#6C9BD2', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  {swapStatus.split('\n').find(l => l.includes('View on Explorer'))}
+                </a>
+              </div>
+            )}
+            {!swapStatus.includes('View on Explorer') && swapStatus}
+          </>
+        )}
       </div>
     </div>
   );

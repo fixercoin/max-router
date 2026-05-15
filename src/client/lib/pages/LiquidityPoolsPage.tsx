@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { PublicKey } from '@solana/web3.js';
+import { saveTransaction, getExplorerUrl } from '../transactionUtils';
 import './Page.css';
 
 const LiquidityPoolsPage: React.FC = () => {
@@ -98,26 +99,41 @@ const LiquidityPoolsPage: React.FC = () => {
       return;
     }
 
-    setLiquidityStatus('⏳ Adding liquidity...');
+    setLiquidityStatus('⏳ Requesting transaction signature...');
 
     try {
       const tokenAPubkey = new PublicKey(selectedPool.tokenA);
       const tokenBPubkey = new PublicKey(selectedPool.tokenB);
       const poolPubkey = new PublicKey(selectedPool.poolAddress);
-      
+
       // Convert to raw amounts with decimals
       const tokenAData = deployedTokens.find((t) => t.mint === selectedPool.tokenA);
       const tokenBData = deployedTokens.find((t) => t.mint === selectedPool.tokenB);
-      
+
       const rawAmountA = amountA * Math.pow(10, tokenAData?.decimals || 6);
       const rawAmountB = amountB * Math.pow(10, tokenBData?.decimals || 6);
-      
-      await dexClient.addLiquidity(poolPubkey, rawAmountA, rawAmountB, tokenAPubkey, tokenBPubkey);
-      
-      setLiquidityStatus(`✅ Liquidity added successfully!`);
+
+      const txHash = await dexClient.addLiquidity(poolPubkey, rawAmountA, rawAmountB, tokenAPubkey, tokenBPubkey);
+
+      const explorerUrl = getExplorerUrl(txHash, 'devnet');
+
+      // Save transaction to history
+      saveTransaction({
+        id: Date.now().toString(),
+        hash: txHash,
+        type: 'add-liquidity',
+        fromToken: selectedPool.symbolA,
+        toToken: selectedPool.symbolB,
+        amount: `${amountA}/${amountB}`,
+        status: 'confirmed',
+        timestamp: Date.now(),
+        explorerUrl
+      });
+
+      setLiquidityStatus(`✅ Liquidity added successfully!\n🔗 ${explorerUrl}`);
       setAddAmountA('');
       setAddAmountB('');
-      
+
       // Refresh pool data
       await loadPoolsFromChain();
     } catch (e: any) {
@@ -165,15 +181,30 @@ const LiquidityPoolsPage: React.FC = () => {
       return;
     }
 
-    setLiquidityStatus('⏳ Removing liquidity...');
+    setLiquidityStatus('⏳ Requesting transaction signature...');
 
     try {
       const poolPubkey = new PublicKey(selectedPool.poolAddress);
       const rawLpAmount = lpAmount * Math.pow(10, 9); // LP tokens have 9 decimals
-      
-      await dexClient.removeLiquidity(poolPubkey, rawLpAmount);
-      
-      setLiquidityStatus(`✅ Liquidity removed successfully!`);
+
+      const txHash = await dexClient.removeLiquidity(poolPubkey, rawLpAmount);
+
+      const explorerUrl = getExplorerUrl(txHash, 'devnet');
+
+      // Save transaction to history
+      saveTransaction({
+        id: Date.now().toString(),
+        hash: txHash,
+        type: 'remove-liquidity',
+        fromToken: selectedPool.symbolA,
+        toToken: selectedPool.symbolB,
+        amount: lpAmount.toString(),
+        status: 'confirmed',
+        timestamp: Date.now(),
+        explorerUrl
+      });
+
+      setLiquidityStatus(`✅ Liquidity removed successfully!\n🔗 ${explorerUrl}`);
       await loadPoolsFromChain();
     } catch (e: any) {
       setLiquidityStatus(`❌ Remove liquidity failed: ${e.message}`);
@@ -330,7 +361,25 @@ const LiquidityPoolsPage: React.FC = () => {
         </>
       )}
 
-      <div className="status-area" dangerouslySetInnerHTML={{ __html: liquidityStatus }} />
+      <div className="status-area">
+        {liquidityStatus && (
+          <>
+            {liquidityStatus.split('\n')[0]}
+            {liquidityStatus.includes('🔗') && (
+              <div style={{ marginTop: '10px' }}>
+                <a
+                  href={liquidityStatus.split('\n').find(l => l.includes('🔗'))?.replace('🔗 ', '') || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#6C9BD2', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  View on Solana Explorer
+                </a>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="section-divider">
         <div className="card-title">ALL POOLS</div>
