@@ -9,7 +9,7 @@ import TokenDetailsPage from './client/lib/pages/TokenDetailsPage';
 import { AppContext, AppContextType } from './client/context/AppContext';
 import { MaxDexClient } from './client/lib/maxDexClient';
 
-export type PageType = 'deploy' | 'pools' | 'swap' | 'tokens' | 'details';
+export type PageType = 'deploy' | 'pools' | 'swap' | 'tokens';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('deploy');
@@ -68,16 +68,67 @@ const App: React.FC = () => {
     setDexClient,
   };
 
+  const renderPageLayout = () => {
+    switch (currentPage) {
+      case 'deploy':
+        return (
+          <div className="page-layout">
+            <div className="page-left">
+              <div className="page-list-title">DEPLOY TOKEN</div>
+              <DeployTokenPage />
+            </div>
+            <div className="page-right">
+              <div className="empty-detail">Deploy information will appear here</div>
+            </div>
+          </div>
+        );
+      case 'pools':
+        return (
+          <div className="page-layout">
+            <div className="page-left">
+              <div className="page-list-title">LIQUIDITY POOLS</div>
+              <LiquidityPoolsPage />
+            </div>
+            <div className="page-right">
+              <div className="empty-detail">Pool details will appear here</div>
+            </div>
+          </div>
+        );
+      case 'swap':
+        return (
+          <div className="page-layout">
+            <div className="page-left">
+              <div className="page-list-title">SWAP ROUTER</div>
+              <SwapRouterPage />
+            </div>
+            <div className="page-right">
+              <div className="empty-detail">Swap details will appear here</div>
+            </div>
+          </div>
+        );
+      case 'tokens':
+        return (
+          <div className="page-layout">
+            <div className="page-left">
+              <div className="page-list-title">MY TOKENS</div>
+              <MyTokensPage />
+            </div>
+            <div className="page-right">
+              {selectedTokenForDetails ? <TokenDetailsPage /> : <div className="empty-detail">Select a token to view details</div>}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <AppContext.Provider value={contextValue}>
       <div className="app">
         <Header />
         <main className="main-container">
-          {currentPage === 'deploy' && <DeployTokenPage />}
-          {currentPage === 'pools' && <LiquidityPoolsPage />}
-          {currentPage === 'swap' && <SwapRouterPage />}
-          {currentPage === 'tokens' && <MyTokensPage />}
-          {currentPage === 'details' && <TokenDetailsPage />}
+          {renderPageLayout()}
         </main>
       </div>
     </AppContext.Provider>
