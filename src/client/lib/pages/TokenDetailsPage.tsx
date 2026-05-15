@@ -6,7 +6,7 @@ import { PublicKey } from '@solana/web3.js';
 import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
-  const { deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient, pools } = useAppContext();
+  const { deployedTokens, selectedTokenForDetails, dexClient, pools } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [holders, setHolders] = useState<any[]>([]);
   const [programMetadata, setProgramMetadata] = useState<any>(null);
