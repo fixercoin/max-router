@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { PublicKey } from '@solana/web3.js';
 import { saveTransaction, getExplorerUrl } from '../transactionUtils';
-import './Page.css';
 
 const SwapRouterPage: React.FC = () => {
   const { wallet, dexClient, deployedTokens, pools, setPools } = useAppContext();
