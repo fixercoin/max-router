@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './App.css';
 import Header from './client/components/Header';
 import DeployTokenPage from './client/lib/pages/DeployTokenPage';
 import LiquidityPoolsPage from './client/lib/pages/LiquidityPoolsPage';
