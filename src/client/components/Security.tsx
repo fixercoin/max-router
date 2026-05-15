@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './Security.css';
 
 interface ProgramStatus {
   verificationStatus: 'verified' | 'unverified' | 'pending';
