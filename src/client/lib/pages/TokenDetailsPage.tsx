@@ -102,12 +102,6 @@ const TokenDetailsPage: React.FC = () => {
           <div className="token-header-info">
             <h1 className="token-symbol">{tokenData?.symbol || 'UNKNOWN'}</h1>
             <p className="token-name">{tokenData?.name || 'Unknown Token'}</p>
-            <button
-              className="back-btn"
-              onClick={() => setCurrentPage('tokens')}
-            >
-              ← BACK
-            </button>
           </div>
         </div>
 
@@ -295,9 +289,7 @@ const TokenDetailsPage: React.FC = () => {
       <style>{`
         .token-details-wrapper {
           width: 100%;
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 20px;
+          padding: 0;
         }
 
         .token-details-container {
@@ -305,6 +297,9 @@ const TokenDetailsPage: React.FC = () => {
           border-radius: 16px;
           border: 1px solid #232a36;
           overflow: hidden;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
         }
 
         .token-details-header {
@@ -322,33 +317,16 @@ const TokenDetailsPage: React.FC = () => {
         }
 
         .token-symbol {
-          font-size: 32px;
+          font-size: 24px;
           font-weight: 700;
           margin: 0;
           color: #e6edf5;
         }
 
         .token-name {
-          font-size: 14px;
+          font-size: 12px;
           color: #8e9bae;
           margin: 4px 0 0 0;
-        }
-
-        .back-btn {
-          padding: 8px 16px;
-          background: #0c111a;
-          border: 1px solid #232a36;
-          border-radius: 8px;
-          color: #6c9bd2;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .back-btn:hover {
-          background: #151d28;
-          border-color: #6c9bd2;
         }
 
         .token-loading {
@@ -359,35 +337,35 @@ const TokenDetailsPage: React.FC = () => {
 
         .token-stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-          padding: 24px;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          padding: 16px;
           border-bottom: 1px solid #232a36;
         }
 
         .stat-card {
-          padding: 16px;
+          padding: 12px;
           background: #0c111a;
-          border-radius: 12px;
+          border-radius: 8px;
           border: 1px solid #1e2a3a;
         }
 
         .stat-label {
-          font-size: 12px;
+          font-size: 10px;
           color: #8e9bae;
           text-transform: uppercase;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
 
         .stat-value {
-          font-size: 24px;
+          font-size: 16px;
           font-weight: 700;
           color: #e6edf5;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
 
         .stat-change {
-          font-size: 12px;
+          font-size: 11px;
           color: #8e9bae;
         }
 
@@ -396,8 +374,9 @@ const TokenDetailsPage: React.FC = () => {
         }
 
         .token-chart-container {
-          padding: 24px;
+          padding: 16px;
           border-bottom: 1px solid #232a36;
+          display: none;
         }
 
         .chart-header {
@@ -408,7 +387,7 @@ const TokenDetailsPage: React.FC = () => {
         }
 
         .chart-title {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 600;
           color: #e6edf5;
           margin: 0;
@@ -438,7 +417,7 @@ const TokenDetailsPage: React.FC = () => {
 
         .chart-canvas {
           width: 100%;
-          height: 200px;
+          height: 150px;
           background: #0c111a;
           border-radius: 8px;
           padding: 12px;
@@ -458,48 +437,52 @@ const TokenDetailsPage: React.FC = () => {
         }
 
         .token-sections {
-          padding: 24px;
+          padding: 16px;
           display: grid;
-          gap: 24px;
+          gap: 16px;
+          overflow-y: auto;
+          flex: 1;
         }
 
         .info-section {
           background: #0c111a;
-          border-radius: 12px;
+          border-radius: 8px;
           border: 1px solid #1e2a3a;
-          padding: 16px;
+          padding: 12px;
         }
 
         .section-title {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 600;
           color: #6c9bd2;
-          margin: 0 0 12px 0;
+          margin: 0 0 10px 0;
           text-transform: uppercase;
         }
 
         .info-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px;
+          grid-template-columns: 1fr;
+          gap: 10px;
         }
 
         .info-item {
           display: flex;
-          flex-direction: column;
-          gap: 4px;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
         }
 
         .info-label {
-          font-size: 12px;
+          font-size: 11px;
           color: #8e9bae;
           text-transform: uppercase;
         }
 
         .info-value {
-          font-size: 14px;
+          font-size: 12px;
           color: #e6edf5;
           font-weight: 500;
+          text-align: right;
         }
 
         .info-value.verified {
@@ -513,70 +496,69 @@ const TokenDetailsPage: React.FC = () => {
 
         .pools-list {
           display: grid;
-          gap: 8px;
+          gap: 6px;
         }
 
         .pool-item {
-          padding: 12px;
+          padding: 8px;
           background: #0a0e15;
-          border-radius: 8px;
-          border-left: 3px solid #6c9bd2;
+          border-radius: 6px;
+          border-left: 2px solid #6c9bd2;
         }
 
         .pool-name {
-          font-size: 14px;
+          font-size: 11px;
           font-weight: 600;
           color: #e6edf5;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
 
         .pool-details {
           display: flex;
-          gap: 16px;
-          font-size: 12px;
+          gap: 8px;
+          font-size: 10px;
           color: #8e9bae;
+          flex-wrap: wrap;
         }
 
         .tx-list {
           display: grid;
-          gap: 8px;
+          gap: 6px;
         }
 
         .tx-item {
           display: grid;
-          grid-template-columns: 120px 1fr 100px 60px;
-          gap: 12px;
-          align-items: center;
-          padding: 12px;
+          grid-template-columns: 1fr;
+          gap: 6px;
+          padding: 8px;
           background: #0a0e15;
-          border-radius: 8px;
+          border-radius: 6px;
           border-bottom: 1px solid #1e2a3a;
         }
 
         .tx-type {
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 600;
           color: #6c9bd2;
-          white-space: nowrap;
         }
 
         .tx-details {
           display: flex;
-          gap: 8px;
-          font-size: 12px;
+          gap: 6px;
+          font-size: 10px;
           color: #e6edf5;
+          flex-wrap: wrap;
         }
 
         .tx-time {
-          font-size: 12px;
+          font-size: 10px;
           color: #8e9bae;
-          text-align: right;
         }
 
         .tx-link {
           color: #6c9bd2;
           text-decoration: none;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 600;
           cursor: pointer;
         }
@@ -587,35 +569,36 @@ const TokenDetailsPage: React.FC = () => {
 
         .holders-list {
           display: grid;
-          gap: 8px;
+          gap: 6px;
         }
 
         .holder-item {
           display: grid;
-          grid-template-columns: 40px 1fr 1fr;
-          gap: 12px;
+          grid-template-columns: 30px 1fr;
+          gap: 8px;
           align-items: center;
-          padding: 12px;
+          padding: 8px;
           background: #0a0e15;
-          border-radius: 8px;
+          border-radius: 6px;
+          font-size: 10px;
         }
 
         .holder-rank {
-          font-size: 14px;
+          font-size: 11px;
           font-weight: 700;
           color: #6c9bd2;
         }
 
         .holder-address {
-          font-size: 12px;
+          font-size: 10px;
           color: #8e9bae;
+          word-break: break-all;
         }
 
         .holder-amount {
-          font-size: 13px;
+          font-size: 10px;
           color: #6fcf97;
           font-weight: 500;
-          text-align: right;
         }
 
         .empty-state {

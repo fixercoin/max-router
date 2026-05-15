@@ -20,6 +20,53 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 100px 24px 48px 24px;
+  min-height: calc(100vh - 100px);
+}
+
+.page-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  height: 100%;
+  align-items: start;
+}
+
+.page-left,
+.page-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.page-left {
+  max-height: calc(100vh - 200px);
+}
+
+.page-right {
+  max-height: calc(100vh - 200px);
+}
+
+.page-list-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: #8E9BAE;
+  margin-bottom: 16px;
+  padding: 0;
+}
+
+.empty-detail {
+  background: #11161F;
+  border: 1px solid #232A36;
+  border-radius: 24px;
+  padding: 40px;
+  text-align: center;
+  color: #8E9BAE;
+  font-size: 14px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dex-card {
@@ -161,6 +208,12 @@ select:focus {
   color: #6C9BD2;
 }
 
+@media (max-width: 1024px) {
+  .page-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .main-container {
     padding: 88px 16px 32px 16px;
@@ -173,5 +226,9 @@ select:focus {
 
   .dex-card {
     padding: 20px;
+  }
+
+  .page-layout {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,13 +1,13 @@
 import React, { Fragment } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import './Page.css';
+import './MyTokensPage.css';
 
 const MyTokensPage: React.FC = () => {
   const { deployedTokens, setCurrentPage, setSelectedTokenForDetails } = useAppContext();
 
   const handleViewToken = (mint: string) => {
     setSelectedTokenForDetails(mint);
-    setCurrentPage('details');
   };
 
   const handleCopyMint = (mint: string) => {
@@ -21,75 +21,37 @@ const MyTokensPage: React.FC = () => {
         <span className="card-title">DEPLOYED TOKENS</span>
       </div>
 
-      <div className="status-area" style={{ maxHeight: '380px' }}>
+      <div className="token-list">
         {deployedTokens.length === 0 ? (
-          '— No tokens deployed —'
+          <div className="empty-tokens">— No tokens deployed —</div>
         ) : (
-          <div>
-            {deployedTokens.map((t, idx) => (
-              <div
-                key={t.mint}
-                style={{
-                  background: '#0C111A',
-                  borderRadius: '16px',
-                  padding: '12px 16px',
-                  marginBottom: '8px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '12px',
-                  border: '1px solid #1E2A3A',
-                }}
-              >
-                <span>
-                  <b>{t.symbol}</b> / {t.name}
-                  <br />
-                  <span style={{ fontSize: '11px', color: '#6C809C' }}>
-                    Mint: {t.mint.slice(0, 28)}…
-                  </span>
+          <div className="token-items">
+            {deployedTokens.map((t) => (
+              <div key={t.mint} className="token-item">
+                <div className="token-info">
+                  <div className="token-header">
+                    <b>{t.symbol}</b> / {t.name}
+                  </div>
+                  <div className="token-mint">Mint: {t.mint.slice(0, 28)}…</div>
                   {t.isVerified && (
-                    <>
-                      <br />
-                      <span style={{ fontSize: '10px', color: '#4CAF50', marginLeft: '8px' }}>
-                        ✓ Verified
-                      </span>
-                    </>
+                    <div className="token-verified">✓ Verified</div>
                   )}
                   {t.circulatingSupply && (
-                    <Fragment>
-                      <br />
-                      <span style={{ fontSize: '10px', color: '#6C809C' }}>
-                        Supply: {parseInt(t.circulatingSupply) / Math.pow(10, t.decimals)} {t.symbol}
-                      </span>
-                    </Fragment>
+                    <div className="token-supply">
+                      Supply: {parseInt(t.circulatingSupply) / Math.pow(10, t.decimals)} {t.symbol}
+                    </div>
                   )}
-                </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                </div>
+                <div className="token-actions">
                   <button
-                    className="copy-mini"
+                    className="token-action copy-btn"
                     onClick={() => handleCopyMint(t.mint)}
-                    style={{
-                      background: '#1E2A3A',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: '#6C809C'
-                    }}
                   >
                     📋 COPY
                   </button>
                   <button
-                    className="copy-mini"
+                    className="token-action view-btn"
                     onClick={() => handleViewToken(t.mint)}
-                    style={{
-                      background: '#1E2A3A',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      color: '#6C9BD2'
-                    }}
                   >
                     👁 VIEW
                   </button>
