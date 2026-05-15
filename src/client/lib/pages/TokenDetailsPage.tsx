@@ -290,6 +290,11 @@ const TokenDetailsPage: React.FC = () => {
         .token-details-wrapper {
           width: 100%;
           padding: 0;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          overflow: hidden;
         }
 
         .token-details-container {
@@ -297,9 +302,10 @@ const TokenDetailsPage: React.FC = () => {
           border-radius: 16px;
           border: 1px solid #232a36;
           overflow: hidden;
-          height: 100%;
+          flex: 1;
           display: flex;
           flex-direction: column;
+          min-height: 0;
         }
 
         .token-details-header {
@@ -376,7 +382,6 @@ const TokenDetailsPage: React.FC = () => {
         .token-chart-container {
           padding: 16px;
           border-bottom: 1px solid #232a36;
-          display: none;
         }
 
         .chart-header {
