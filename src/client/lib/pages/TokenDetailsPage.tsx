@@ -3,7 +3,7 @@ import { useAppContext } from '../../context/AppContext';
 import { getTokenMetadata, getTokenHolders } from '../solanaService';
 import { getTransactionsByToken } from '../transactionUtils';
 import { PublicKey } from '@solana/web3.js';
-import './Page.css';
+
 
 const TokenDetailsPage: React.FC = () => {
   const { deployedTokens, selectedTokenForDetails, dexClient, pools } = useAppContext();
