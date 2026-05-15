@@ -200,7 +200,7 @@ select:focus {
   color: #6C9BD2;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .page-layout {
     grid-template-columns: 1fr;
   }
