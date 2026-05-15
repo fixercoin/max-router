@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react';
+import React from 'react';
 import { useAppContext } from '../../context/AppContext';
 import './Page.css';
 import './MyTokensPage.css';
