@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { getTokenMetadata, getTokenHolders } from '../solanaService';
-import { getTransactionsByToken, getExplorerUrl } from '../transactionUtils';
+import { getTransactionsByToken } from '../transactionUtils';
 import { PublicKey } from '@solana/web3.js';
 import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
   const { deployedTokens, setCurrentPage, selectedTokenForDetails, dexClient, pools } = useAppContext();
   const [loading, setLoading] = useState(true);
-  const [supply, setSupply] = useState<any>(null);
   const [holders, setHolders] = useState<any[]>([]);
   const [programMetadata, setProgramMetadata] = useState<any>(null);
   const [poolsWithToken, setPoolsWithToken] = useState<any[]>([]);
@@ -20,8 +19,7 @@ const TokenDetailsPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const supplyData = await getTokenMetadata(selectedTokenForDetails);
-      setSupply(supplyData);
+      await getTokenMetadata(selectedTokenForDetails);
 
       const holdersData = await getTokenHolders(selectedTokenForDetails);
       setHolders(holdersData);
@@ -294,7 +292,7 @@ const TokenDetailsPage: React.FC = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .token-details-wrapper {
           width: 100%;
           max-width: 1200px;
