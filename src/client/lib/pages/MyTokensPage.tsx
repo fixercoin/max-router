@@ -8,6 +8,7 @@ const MyTokensPage: React.FC = () => {
 
   const handleViewToken = (mint: string) => {
     setSelectedTokenForDetails(mint);
+    setCurrentPage('tokens');
   };
 
   const handleCopyMint = (mint: string) => {
