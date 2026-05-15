@@ -7,7 +7,6 @@ import './Page.css';
 
 const TokenDetailsPage: React.FC = () => {
   const { deployedTokens, selectedTokenForDetails, dexClient, pools } = useAppContext();
-  const [loading, setLoading] = useState(true);
   const [holders, setHolders] = useState<any[]>([]);
   const [programMetadata, setProgramMetadata] = useState<any>(null);
   const [poolsWithToken, setPoolsWithToken] = useState<any[]>([]);
@@ -22,7 +21,6 @@ const TokenDetailsPage: React.FC = () => {
 
   const loadTokenDetails = useCallback(async () => {
     if (!selectedTokenForDetails) return;
-    setLoading(true);
 
     try {
       await getTokenMetadata(selectedTokenForDetails);
@@ -31,8 +29,6 @@ const TokenDetailsPage: React.FC = () => {
     } catch (e) {
       console.error('Failed to load details:', e);
     }
-
-    setLoading(false);
   }, [selectedTokenForDetails]);
 
   const loadProgramMetadata = useCallback(async () => {
