@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import './Page.css';
-import './MyTokensPage.css';
 
 const MyTokensPage: React.FC = () => {
   const { deployedTokens, setCurrentPage, setSelectedTokenForDetails } = useAppContext();
