@@ -16,7 +16,7 @@ interface WalletInfo {
 }
 
 const Header: React.FC = () => {
-  const { wallet, setWallet } = useAppContext();
+  const { wallet, setWallet, currentPage, setCurrentPage } = useAppContext();
   const [walletStatus, setWalletStatus] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -152,6 +152,32 @@ const Header: React.FC = () => {
       <div className="brand">
         <h1>MAX</h1>
       </div>
+      <nav className="nav-menu">
+        <button
+          className={`nav-btn ${currentPage === 'deploy' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('deploy')}
+        >
+          Deploy
+        </button>
+        <button
+          className={`nav-btn ${currentPage === 'pools' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('pools')}
+        >
+          Pools
+        </button>
+        <button
+          className={`nav-btn ${currentPage === 'swap' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('swap')}
+        >
+          Swap
+        </button>
+        <button
+          className={`nav-btn ${currentPage === 'tokens' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('tokens')}
+        >
+          Tokens
+        </button>
+      </nav>
       <div className="wallet-section">
         {wallet ? (
           <>

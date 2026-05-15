@@ -27,22 +27,14 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  height: 100%;
-  align-items: start;
+  height: auto;
 }
 
 .page-left,
 .page-right {
   display: flex;
   flex-direction: column;
-}
-
-.page-left {
-  max-height: calc(100vh - 200px);
-}
-
-.page-right {
-  max-height: calc(100vh - 200px);
+  min-height: 0;
 }
 
 .page-list-title {
