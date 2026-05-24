@@ -23,12 +23,23 @@ export interface AppContextType {
   setDexClient: (client: MaxDexClient | null) => void;
 }
 
-export const AppContext = React.createContext<AppContextType | undefined>(undefined);
+const defaultContextValue: AppContextType = {
+  wallet: null,
+  setWallet: () => {},
+  deployedTokens: [],
+  setDeployedTokens: () => {},
+  pools: [],
+  setPools: () => {},
+  currentPage: 'deploy',
+  setCurrentPage: () => {},
+  selectedTokenForDetails: null,
+  setSelectedTokenForDetails: () => {},
+  dexClient: null,
+  setDexClient: () => {},
+};
+
+export const AppContext = React.createContext<AppContextType>(defaultContextValue);
 
 export const useAppContext = () => {
-  const context = React.useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within AppProvider');
-  }
-  return context;
+  return React.useContext(AppContext);
 };
