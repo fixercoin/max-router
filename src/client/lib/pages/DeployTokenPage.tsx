@@ -148,262 +148,276 @@ const DeployTokenPage: React.FC = () => {
   };
 
   return (
-    <div className="deploy-token-single-column-layout">
-      <div className="main-container">
-        <div className="dropdowns-container">
-          <h3 className="column-title">Deployment Settings</h3>
-          
-          {/* Status Card */}
-          <div className="status-card">
-            <div className="status-header">
-              <span className="status-title">Connection Status</span>
+    <div className="deploy-token-two-column-layout">
+      {/* Left Card */}
+      <div className="left-card">
+        <h3 className="card-title-main">Deployment Settings</h3>
+        
+        {/* Status Card */}
+        <div className="status-card">
+          <div className="status-header">
+            <span className="status-title">Connection Status</span>
+          </div>
+          <div className="status-content">
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{status}</pre>
+          </div>
+        </div>
+
+        {/* Dropdown 1 */}
+        <div className="dropdown-group">
+          <label className="dropdown-label">Token Preset</label>
+          <select 
+            className="dropdown-select"
+            value={selectedPreset}
+            onChange={(e) => handlePresetChange(e.target.value)}
+          >
+            <option value="custom">Custom Token</option>
+            <option value="meme">Meme Token</option>
+            <option value="utility">Utility Token</option>
+            <option value="governance">Governance Token</option>
+          </select>
+        </div>
+
+        {/* Dropdown 2 */}
+        <div className="dropdown-group">
+          <label className="dropdown-label">Network</label>
+          <select 
+            className="dropdown-select"
+            value={selectedNetwork}
+            onChange={(e) => setSelectedNetwork(e.target.value)}
+          >
+            <option value="devnet">Devnet Test</option>
+            <option value="mainnet-beta">Mainnet Production</option>
+          </select>
+        </div>
+
+        {/* Dropdown 3 */}
+        <div className="dropdown-group">
+          <label className="dropdown-label">Token Standard</label>
+          <select 
+            className="dropdown-select"
+            value={selectedTokenStandard}
+            onChange={(e) => setSelectedTokenStandard(e.target.value)}
+          >
+            <option value="spl">SPL Token</option>
+            <option value="spl2022">SPL Token 2022</option>
+          </select>
+        </div>
+
+        {/* Dropdown 4 */}
+        <div className="dropdown-group">
+          <label className="dropdown-label">Mint Authority</label>
+          <select 
+            className="dropdown-select"
+            value={selectedMintAuthority}
+            onChange={(e) => setSelectedMintAuthority(e.target.value)}
+          >
+            <option value="wallet">Current Wallet</option>
+            <option value="multisig">Multi-sig Coming Soon</option>
+            <option value="timelock">Time-lock Coming Soon</option>
+          </select>
+        </div>
+
+        {/* Quick Supply Options */}
+        <div className="quick-options">
+          <label className="dropdown-label">Quick Supply Options</label>
+          <div className="supply-buttons">
+            <button onClick={() => handleQuickFill('small')} className="supply-btn">10K</button>
+            <button onClick={() => handleQuickFill('medium')} className="supply-btn">1M</button>
+            <button onClick={() => handleQuickFill('large')} className="supply-btn">1B</button>
+          </div>
+        </div>
+
+        {/* Info Card */}
+        <div className="info-card">
+          <div className="info-text">
+            <strong>Deployment Info</strong><br />
+            Fee: 0.05 SOL<br />
+            Time: 30 seconds<br />
+            Includes metadata<br />
+            Verified by MAX DEX
+          </div>
+        </div>
+
+        {/* Recent Deployments Card */}
+        {deployedTokens.length > 0 && (
+          <div className="recent-card">
+            <div className="recent-header">
+              <span className="recent-title">Recent Deployments</span>
             </div>
-            <div className="status-content">
-              <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{status}</pre>
-            </div>
-          </div>
-
-          {/* Token Information Card */}
-          <div className="token-info-card">
-            <div className="card-header">
-              <span className="card-title">Token Information</span>
-            </div>
-            <div className="card-content">
-              <div className="info-row">
-                <span className="info-label">Token Name</span>
-                <span className="info-value">{tokenName}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Token Symbol</span>
-                <span className="info-value">{tokenSymbol}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Decimals</span>
-                <span className="info-value">{tokenDecimals}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Total Supply</span>
-                <span className="info-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Network</span>
-                <span className="info-value">{selectedNetwork.toUpperCase()}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Token Standard</span>
-                <span className="info-value">{selectedTokenStandard.toUpperCase()}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Estimated Cost</span>
-                <span className="info-value">0.05 SOL</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Dropdown 1 */}
-          <div className="dropdown-group">
-            <label className="dropdown-label">Token Preset</label>
-            <select 
-              className="dropdown-select"
-              value={selectedPreset}
-              onChange={(e) => handlePresetChange(e.target.value)}
-            >
-              <option value="custom">Custom Token</option>
-              <option value="meme">Meme Token</option>
-              <option value="utility">Utility Token</option>
-              <option value="governance">Governance Token</option>
-            </select>
-          </div>
-
-          {/* Dropdown 2 */}
-          <div className="dropdown-group">
-            <label className="dropdown-label">Network</label>
-            <select 
-              className="dropdown-select"
-              value={selectedNetwork}
-              onChange={(e) => setSelectedNetwork(e.target.value)}
-            >
-              <option value="devnet">Devnet Test</option>
-              <option value="mainnet-beta">Mainnet Production</option>
-            </select>
-          </div>
-
-          {/* Dropdown 3 */}
-          <div className="dropdown-group">
-            <label className="dropdown-label">Token Standard</label>
-            <select 
-              className="dropdown-select"
-              value={selectedTokenStandard}
-              onChange={(e) => setSelectedTokenStandard(e.target.value)}
-            >
-              <option value="spl">SPL Token</option>
-              <option value="spl2022">SPL Token 2022</option>
-            </select>
-          </div>
-
-          {/* Dropdown 4 */}
-          <div className="dropdown-group">
-            <label className="dropdown-label">Mint Authority</label>
-            <select 
-              className="dropdown-select"
-              value={selectedMintAuthority}
-              onChange={(e) => setSelectedMintAuthority(e.target.value)}
-            >
-              <option value="wallet">Current Wallet</option>
-              <option value="multisig">Multi-sig Coming Soon</option>
-              <option value="timelock">Time-lock Coming Soon</option>
-            </select>
-          </div>
-
-          {/* Quick Supply Options */}
-          <div className="quick-options">
-            <label className="dropdown-label">Quick Supply Options</label>
-            <div className="supply-buttons">
-              <button onClick={() => handleQuickFill('small')} className="supply-btn">10K</button>
-              <button onClick={() => handleQuickFill('medium')} className="supply-btn">1M</button>
-              <button onClick={() => handleQuickFill('large')} className="supply-btn">1B</button>
+            <div className="recent-list">
+              {deployedTokens.slice(-3).reverse().map((token, idx) => (
+                <div key={idx} className="recent-item">
+                  <div className="recent-symbol">{token.symbol}</div>
+                  <div className="recent-details">
+                    <div>{token.name}</div>
+                    <div className="recent-supply">{token.totalSupply.toLocaleString()} supply</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Token Details Card */}
-          <div className="config-card">
-            <div className="card-header">
-              <span className="card-title">Token Configuration</span>
+      {/* Right Card */}
+      <div className="right-card">
+        <h3 className="card-title-main">Token Configuration</h3>
+        
+        {/* Token Information Card */}
+        <div className="token-info-card">
+          <div className="card-header">
+            <span className="card-title">Token Information</span>
+          </div>
+          <div className="card-content">
+            <div className="info-row">
+              <span className="info-label">Token Name</span>
+              <span className="info-value">{tokenName}</span>
             </div>
-            <div className="card-content">
-              <div className="form-field">
-                <label className="field-label">TOKEN NAME</label>
+            <div className="info-row">
+              <span className="info-label">Token Symbol</span>
+              <span className="info-value">{tokenSymbol}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Decimals</span>
+              <span className="info-value">{tokenDecimals}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Total Supply</span>
+              <span className="info-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Network</span>
+              <span className="info-value">{selectedNetwork.toUpperCase()}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Token Standard</span>
+              <span className="info-value">{selectedTokenStandard.toUpperCase()}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Estimated Cost</span>
+              <span className="info-value">0.05 SOL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Token Details Card */}
+        <div className="config-card">
+          <div className="card-header">
+            <span className="card-title">Token Details</span>
+          </div>
+          <div className="card-content">
+            <div className="form-field">
+              <label className="field-label">TOKEN NAME</label>
+              <input
+                type="text"
+                className="field-input"
+                value={tokenName}
+                onChange={(e) => setTokenName(e.target.value)}
+                placeholder="Example: MAX Power"
+              />
+            </div>
+            <div className="form-field">
+              <label className="field-label">SYMBOL</label>
+              <input
+                type="text"
+                className="field-input"
+                value={tokenSymbol}
+                onChange={(e) => setTokenSymbol(e.target.value)}
+                placeholder="MAX"
+              />
+            </div>
+            <div className="form-row-two">
+              <div className="form-field half">
+                <label className="field-label">DECIMALS</label>
                 <input
-                  type="text"
+                  type="number"
                   className="field-input"
-                  value={tokenName}
-                  onChange={(e) => setTokenName(e.target.value)}
-                  placeholder="Example: MAX Power"
+                  value={tokenDecimals}
+                  onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
+                  min="0"
+                  max="9"
                 />
               </div>
-              <div className="form-field">
-                <label className="field-label">SYMBOL</label>
+              <div className="form-field half">
+                <label className="field-label">TOTAL SUPPLY</label>
                 <input
-                  type="text"
+                  type="number"
                   className="field-input"
-                  value={tokenSymbol}
-                  onChange={(e) => setTokenSymbol(e.target.value)}
-                  placeholder="MAX"
+                  value={tokenSupply}
+                  onChange={(e) => setTokenSupply(parseInt(e.target.value))}
+                  min="1"
                 />
               </div>
-              <div className="form-row-two">
-                <div className="form-field half">
-                  <label className="field-label">DECIMALS</label>
-                  <input
-                    type="number"
-                    className="field-input"
-                    value={tokenDecimals}
-                    onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
-                    min="0"
-                    max="9"
-                  />
-                </div>
-                <div className="form-field half">
-                  <label className="field-label">TOTAL SUPPLY</label>
-                  <input
-                    type="number"
-                    className="field-input"
-                    value={tokenSupply}
-                    onChange={(e) => setTokenSupply(parseInt(e.target.value))}
-                    min="1"
-                  />
-                </div>
-              </div>
             </div>
           </div>
+        </div>
 
-          {/* Info Card */}
-          <div className="info-card-left">
-            <div className="info-text">
-              <strong>Deployment Info</strong><br />
-              Fee: 0.05 SOL<br />
-              Time: 30 seconds<br />
-              Includes metadata<br />
-              Verified by MAX DEX
-            </div>
+        {/* Actions Card */}
+        <div className="config-card">
+          <div className="card-header">
+            <span className="card-title">Deployment Actions</span>
           </div>
-
-          {/* Actions Card */}
-          <div className="config-card">
-            <div className="card-header">
-              <span className="card-title">Deployment Actions</span>
-            </div>
-            <div className="card-content">
-              {!dexClient && (
-                <button className="action-button initialize-btn" onClick={initializeDex}>
-                  INITIALIZE DEX FIRST
-                </button>
-              )}
-              <button 
-                className="action-button deploy-btn" 
-                onClick={handleDeployToken}
-                disabled={!dexClient && !status.includes('already initialized')}
-              >
-                DEPLOY TOKEN ON MAX DEX
+          <div className="card-content">
+            {!dexClient && (
+              <button className="action-button initialize-btn" onClick={initializeDex}>
+                INITIALIZE DEX FIRST
               </button>
-              <div className="warning-text">
-                Make sure you have enough SOL for deployment fees
-              </div>
+            )}
+            <button 
+              className="action-button deploy-btn" 
+              onClick={handleDeployToken}
+              disabled={!dexClient && !status.includes('already initialized')}
+            >
+              DEPLOY TOKEN ON MAX DEX
+            </button>
+            <div className="warning-text">
+              Make sure you have enough SOL for deployment fees
             </div>
           </div>
-
-          {/* Recent Deployments Card (if any) */}
-          {deployedTokens.length > 0 && (
-            <div className="config-card">
-              <div className="card-header">
-                <span className="card-title">Recent Deployments</span>
-              </div>
-              <div className="card-content">
-                <div className="recent-list">
-                  {deployedTokens.slice(-3).reverse().map((token, idx) => (
-                    <div key={idx} className="recent-item">
-                      <div className="recent-symbol">{token.symbol}</div>
-                      <div className="recent-details">
-                        <div>{token.name}</div>
-                        <div className="recent-supply">{token.totalSupply.toLocaleString()} supply</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       <style>{`
-        .deploy-token-single-column-layout {
+        .deploy-token-two-column-layout {
+          display: flex;
+          gap: 20px;
           width: 100%;
-          height: 100%;
           min-height: 600px;
           padding: 20px;
           background: linear-gradient(135deg, #0f1419 0%, #151d28 100%);
           border-radius: 16px;
         }
 
-        .main-container {
-          max-width: 600px;
-          margin: 0 auto;
+        /* Left Card */
+        .left-card {
+          flex: 1;
           background: rgba(12, 17, 26, 0.8);
           border-radius: 12px;
           border: 1px solid #232a36;
-          overflow-y: auto;
-          backdrop-filter: blur(10px);
-        }
-
-        .dropdowns-container {
           padding: 20px;
           display: flex;
           flex-direction: column;
           gap: 20px;
+          backdrop-filter: blur(10px);
+          overflow-y: auto;
         }
 
-        .column-title {
+        /* Right Card */
+        .right-card {
+          flex: 1;
+          background: rgba(12, 17, 26, 0.8);
+          border-radius: 12px;
+          border: 1px solid #232a36;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          backdrop-filter: blur(10px);
+          overflow-y: auto;
+        }
+
+        .card-title-main {
           font-size: 16px;
           font-weight: 600;
           color: #6c9bd2;
@@ -622,8 +636,8 @@ const DeployTokenPage: React.FC = () => {
           flex: 1;
         }
 
-        /* Info Card Left */
-        .info-card-left {
+        /* Info Card */
+        .info-card {
           background: rgba(108, 155, 210, 0.05);
           border: 1px solid #232a36;
           border-radius: 10px;
@@ -689,10 +703,30 @@ const DeployTokenPage: React.FC = () => {
         }
 
         /* Recent Deployments */
+        .recent-card {
+          background: #0c111a;
+          border-radius: 12px;
+          border: 1px solid #1e2a3a;
+          overflow: hidden;
+        }
+
+        .recent-header {
+          padding: 16px 20px;
+          background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
+          border-bottom: 1px solid #1e2a3a;
+        }
+
+        .recent-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: #6c9bd2;
+        }
+
         .recent-list {
           display: flex;
           flex-direction: column;
           gap: 12px;
+          padding: 20px;
         }
 
         .recent-item {
@@ -730,28 +764,44 @@ const DeployTokenPage: React.FC = () => {
         }
 
         /* Scrollbar */
-        .main-container::-webkit-scrollbar {
+        .left-card::-webkit-scrollbar,
+        .right-card::-webkit-scrollbar {
           width: 6px;
         }
 
-        .main-container::-webkit-scrollbar-track {
+        .left-card::-webkit-scrollbar-track,
+        .right-card::-webkit-scrollbar-track {
           background: #0c111a;
           border-radius: 3px;
         }
 
-        .main-container::-webkit-scrollbar-thumb {
+        .left-card::-webkit-scrollbar-thumb,
+        .right-card::-webkit-scrollbar-thumb {
           background: #232a36;
           border-radius: 3px;
         }
 
-        .main-container::-webkit-scrollbar-thumb:hover {
+        .left-card::-webkit-scrollbar-thumb:hover,
+        .right-card::-webkit-scrollbar-thumb:hover {
           background: #6c9bd2;
         }
 
         /* Responsive */
+        @media (max-width: 1024px) {
+          .deploy-token-two-column-layout {
+            flex-direction: column;
+          }
+
+          .left-card,
+          .right-card {
+            min-height: auto;
+          }
+        }
+
         @media (max-width: 768px) {
-          .deploy-token-single-column-layout {
+          .deploy-token-two-column-layout {
             padding: 12px;
+            gap: 12px;
           }
 
           .form-row-two {
