@@ -14,8 +14,8 @@ const SwapRouterPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const allTokens = [
-    { symbol: 'USDC', mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr', decimals: 6, price: 1.00, change24h: 0.05, volume: 1250000 },
-    { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', decimals: 9, price: 145.20, change24h: 2.5, volume: 890000 },
+    { symbol: 'USDC', mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr', decimals: 6, price: 1.00, change24h: 0.05, volume: 1250000, logo: null },
+    { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', decimals: 9, price: 145.20, change24h: 2.5, volume: 890000, logo: null },
     ...deployedTokens.map(t => ({
       symbol: t.symbol,
       mint: t.mint,
@@ -23,7 +23,7 @@ const SwapRouterPage: React.FC = () => {
       price: Math.random() * 100,
       change24h: (Math.random() * 20) - 10,
       volume: Math.random() * 100000,
-      logo: t.logo
+      logo: t.logo || null
     }))
   ];
 
@@ -413,7 +413,6 @@ const SwapRouterPage: React.FC = () => {
           text-align: center;
         }
 
-        /* Search Styles */
         .search-container {
           margin-bottom: 20px;
         }
@@ -440,7 +439,6 @@ const SwapRouterPage: React.FC = () => {
           letter-spacing: 0.5px;
         }
 
-        /* Tokens List */
         .tokens-list {
           display: flex;
           flex-direction: column;
@@ -532,7 +530,6 @@ const SwapRouterPage: React.FC = () => {
           color: #dc2626;
         }
 
-        /* Chart Styles */
         .chart-container {
           flex: 1;
           min-height: 400px;
@@ -612,7 +609,6 @@ const SwapRouterPage: React.FC = () => {
           color: #6c9bd2;
         }
 
-        /* Swap Styles */
         .swap-container {
           display: flex;
           flex-direction: column;
@@ -769,7 +765,6 @@ const SwapRouterPage: React.FC = () => {
           font-size: 13px;
         }
 
-        /* Scrollbar */
         .left-column::-webkit-scrollbar,
         .center-column::-webkit-scrollbar,
         .right-column::-webkit-scrollbar,
