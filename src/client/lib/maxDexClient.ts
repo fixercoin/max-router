@@ -348,15 +348,15 @@ export class MaxDexClient {
       for (let j = i + 1; j < tokenMints.length; j++) {
         try {
           const poolAddress = await this.getPoolAddress(tokenMints[i], tokenMints[j]);
-          const poolData = await this.program.account.poolAccount.fetch(poolAddress);
+          const poolData: any = await this.program.account.poolAccount.fetch(poolAddress);
           pools.push({
             poolAddress: poolAddress.toString(),
             tokenA: tokenMints[i].toString(),
             tokenB: tokenMints[j].toString(),
-            reserveA: poolData.reserveA?.toNumber?.() || 0,
-            reserveB: poolData.reserveB?.toNumber?.() || 0,
-            totalLp: poolData.lpSupply?.toNumber?.() || 0,
-            fee: poolData.feeBps || 0,
+            reserveA: poolData.reserveA.toNumber(),
+            reserveB: poolData.reserveB.toNumber(),
+            totalLp: poolData.lpSupply.toNumber(),
+            fee: poolData.feeBps,
           });
         } catch (e) {
           // Pool doesn't exist yet

@@ -27,23 +27,22 @@ interface TokenSecurity {
 export const Security: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<'program' | 'tokens'>('program');
   const [programStatus, setProgramStatus] = useState<ProgramStatus>({
-    verificationStatus: 'verified',
-    onChainHash: '36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk', // Your program ID
-    executableHash: 'a7f4c8e2d9b1e5f3c6a2d8e1f4b7c9d2e5a8f1b4c7d9e2f5a8b1c4d7e9f2', // Update with actual hash
-    lastVerified: new Date().toISOString(),
+    verificationStatus: 'unverified',
+    onChainHash: '36qH8uWkekoCa8qzFcBCkmZqUr9Y9JzFgtwct7RsJrTk',
+    executableHash: '',
+    lastVerified: '',
     signer: 'MAX DEX Authority',
     repository: 'https://github.com/fixercoin/max',
-    buildStatus: 'success',
-    securityAuditPassed: true,
-    auditorName: 'CertiK',
-    auditDate: '2024-01-10',
+    buildStatus: 'pending',
+    securityAuditPassed: false,
+    auditorName: 'Not Audited',
+    auditDate: '',
   });
 
   // Fetch actual token security from your deployed tokens
   const [tokenSecurityList, setTokenSecurityList] = useState<TokenSecurity[]>([]);
 
   useEffect(() => {
-    // Load actual deployed tokens from context or localStorage
     const loadTokens = async () => {
       const storedTokens = localStorage.getItem('MAX_deployed');
       if (storedTokens) {
@@ -51,17 +50,17 @@ export const Security: React.FC = () => {
         const securityData = deployedTokens.map((token: any) => ({
           tokenAddress: token.mint,
           verified: token.isVerified || false,
-          autoLock: true,
-          burnMechanism: true, // Your program has auto-burn
-          burnPercentage: 20, // From your program constants
-          burnDays: 730, // From your program constants
-          contractAudited: true,
-          riskLevel: 'low' as const,
+          autoLock: token.autoLock || false,
+          burnMechanism: token.burnMechanism || false,
+          burnPercentage: token.burnPercentage || 0,
+          burnDays: token.burnDays || 0,
+          contractAudited: false,
+          riskLevel: 'high' as const,
         }));
         setTokenSecurityList(securityData);
       }
     };
-    
+
     loadTokens();
   }, []);
 

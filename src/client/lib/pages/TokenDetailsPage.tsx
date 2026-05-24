@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { getTokenMetadata, getTokenHolders } from '../solanaService';
-import { getTransactionsByToken } from '../transactionUtils';
 import { PublicKey } from '@solana/web3.js';
 
 
@@ -51,24 +50,47 @@ const TokenDetailsPage: React.FC = () => {
     setPoolsWithToken(tokenPools);
   }, [pools, selectedTokenForDetails]);
 
-  const loadTransactionHistory = useCallback(() => {
+  const loadTransactionHistory = useCallback(async () => {
     if (!selectedTokenForDetails) return;
-    const txs = getTransactionsByToken(selectedTokenForDetails);
-    setTransactions(txs);
-    
-    const now = Date.now();
-    const dayAgo = now - 24 * 60 * 60 * 1000;
-    const mockChart = [];
-    for (let i = 0; i < 24; i++) {
-      const timestamp = dayAgo + (i * 60 * 60 * 1000);
-      const basePrice = 0.5;
-      const variance = Math.sin(i / 4) * 0.1 + (Math.random() - 0.5) * 0.05;
-      mockChart.push({
-        time: new Date(timestamp).getHours(),
-        price: Math.max(0.01, basePrice + variance)
+
+    try {
+      const { Connection, PublicKey } = await import("@solana/web3.js");
+      const connection = new Connection("https://api.mainnet-beta.solana.com");
+      const mintPubkey = new PublicKey(selectedTokenForDetails);
+      const tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQQfimJwWCmRJBn1g");
+
+      const tokenAccounts = await connection.getProgramAccounts(tokenProgramId, {
+        filters: [
+          { memcmp: { offset: 0, bytes: mintPubkey.toBase58() } },
+        ],
       });
+
+      const allSignatures: any[] = [];
+      for (const account of tokenAccounts.slice(0, 10)) {
+        const sigs = await connection.getSignaturesForAddress(account.pubkey, { limit: 20 });
+        allSignatures.push(...sigs);
+      }
+
+      const uniqueSigs = Array.from(new Map(allSignatures.map(s => [s.signature, s])).values());
+      const txData = uniqueSigs
+        .sort((a, b) => (b.blockTime || 0) - (a.blockTime || 0))
+        .slice(0, 50)
+        .map((sig) => ({
+          signature: sig.signature,
+          timestamp: sig.blockTime || 0,
+          status: sig.err ? 'failed' : 'success',
+        }));
+
+      setTransactions(txData);
+      setChartData([
+        { time: '24h ago', price: 0 },
+        { time: 'now', price: 0 },
+      ]);
+    } catch (error) {
+      console.error("Failed to load transaction history:", error);
+      setTransactions([]);
+      setChartData([]);
     }
-    setChartData(mockChart);
   }, [selectedTokenForDetails]);
 
   useEffect(() => {
@@ -167,14 +189,6 @@ const TokenDetailsPage: React.FC = () => {
             <h3 className="card-title">📊 Statistics</h3>
             <div className="card-content">
               <div className="info-row">
-                <span className="info-label">Price</span>
-                <span className="info-value">$0.50</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">24h Change</span>
-                <span className="info-value positive">+2.5%</span>
-              </div>
-              <div className="info-row">
                 <span className="info-label">24h Volume</span>
                 <span className="info-value">${volume24h.toFixed(2)}</span>
               </div>
@@ -185,6 +199,14 @@ const TokenDetailsPage: React.FC = () => {
               <div className="info-row">
                 <span className="info-label">Holders Count</span>
                 <span className="info-value">{holders.length}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Total Transactions</span>
+                <span className="info-value">{transactions.length}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Status</span>
+                <span className="info-value">{transactions.length > 0 ? 'Active' : 'Inactive'}</span>
               </div>
             </div>
           </div>
