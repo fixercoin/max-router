@@ -56,16 +56,16 @@ const LiquidityPoolsPage: React.FC = () => {
 
   const handleCreatePool = async () => {
     if (!wallet || !dexClient) {
-      alert('Connect wallet and initialize DEX first');
+      alert('CONNECT WALLET AND INITIALIZE DEX FIRST');
       return;
     }
 
     if (!tokenAMint || !tokenBMint) {
-      alert('Enter both token mint addresses');
+      alert('ENTER BOTH TOKEN MINT ADDRESSES');
       return;
     }
 
-    setPoolStatus('Creating pool on MAX DEX...');
+    setPoolStatus('CREATING POOL ON MAX DEX...');
 
     try {
       const tokenAPubkey = new PublicKey(tokenAMint);
@@ -96,8 +96,8 @@ const LiquidityPoolsPage: React.FC = () => {
       localStorage.setItem('MAX_pools', JSON.stringify(newPools));
 
       setPoolStatus(
-        `Pool created: ${symbolA}/${symbolB} | Fee: ${feeBps / 100}%\n` +
-        `Pool Address: ${poolAddress.toString()}`
+        `POOL CREATED: ${symbolA}/${symbolB} | FEE: ${feeBps / 100}%\n` +
+        `POOL ADDRESS: ${poolAddress.toString()}`
       );
       setTokenAMint('');
       setTokenBMint('');
@@ -106,13 +106,13 @@ const LiquidityPoolsPage: React.FC = () => {
         loadPoolsFromChain();
       }, 2000);
     } catch (e: any) {
-      setPoolStatus(`Pool creation failed: ${e.message}`);
+      setPoolStatus(`POOL CREATION FAILED: ${e.message}`);
     }
   };
 
   const handleAddLiquidity = async () => {
     if (!wallet || !dexClient || !selectedPool) {
-      alert('Select a pool first');
+      alert('SELECT A POOL FIRST');
       return;
     }
 
@@ -120,11 +120,11 @@ const LiquidityPoolsPage: React.FC = () => {
     const amountB = parseFloat(addAmountB);
 
     if (isNaN(amountA) || isNaN(amountB) || amountA <= 0 || amountB <= 0) {
-      alert('Enter valid amounts for both tokens');
+      alert('ENTER VALID AMOUNTS FOR BOTH TOKENS');
       return;
     }
 
-    setLiquidityStatus('Requesting transaction signature...');
+    setLiquidityStatus('REQUESTING TRANSACTION SIGNATURE...');
 
     try {
       const tokenAPubkey = new PublicKey(selectedPool.tokenA);
@@ -153,29 +153,29 @@ const LiquidityPoolsPage: React.FC = () => {
         explorerUrl
       });
 
-      setLiquidityStatus(`Liquidity added successfully!\n${explorerUrl}`);
+      setLiquidityStatus(`LIQUIDITY ADDED SUCCESSFULLY!\n${explorerUrl}`);
       setAddAmountA('');
       setAddAmountB('');
 
       await loadPoolsFromChain();
     } catch (e: any) {
-      setLiquidityStatus(`Add liquidity failed: ${e.message}`);
+      setLiquidityStatus(`ADD LIQUIDITY FAILED: ${e.message}`);
     }
   };
 
   const handleSwap = async () => {
     if (!wallet || !dexClient || !selectedPool) {
-      alert('Select a pool first');
+      alert('SELECT A POOL FIRST');
       return;
     }
 
     const amount = parseFloat(swapAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Enter valid amount');
+      alert('ENTER VALID AMOUNT');
       return;
     }
 
-    setSwapStatus('Swapping...');
+    setSwapStatus('SWAPPING...');
 
     try {
       const tokenInPubkey = new PublicKey(selectedPool.tokenA);
@@ -187,22 +187,22 @@ const LiquidityPoolsPage: React.FC = () => {
       
       await dexClient.swap(poolPubkey, tokenInPubkey, tokenOutPubkey, rawAmount, 0);
       
-      setSwapStatus(`Swap completed successfully!`);
+      setSwapStatus('SWAP COMPLETED SUCCESSFULLY!');
       setSwapAmount('');
       
       await loadPoolsFromChain();
     } catch (e: any) {
-      setSwapStatus(`Swap failed: ${e.message}`);
+      setSwapStatus(`SWAP FAILED: ${e.message}`);
     }
   };
 
   const handleRemoveLiquidity = async (lpAmount: number) => {
     if (!wallet || !dexClient || !selectedPool) {
-      alert('Select a pool first');
+      alert('SELECT A POOL FIRST');
       return;
     }
 
-    setLiquidityStatus('Requesting transaction signature...');
+    setLiquidityStatus('REQUESTING TRANSACTION SIGNATURE...');
 
     try {
       const poolPubkey = new PublicKey(selectedPool.poolAddress);
@@ -224,57 +224,54 @@ const LiquidityPoolsPage: React.FC = () => {
         explorerUrl
       });
 
-      setLiquidityStatus(`Liquidity removed successfully!\n${explorerUrl}`);
+      setLiquidityStatus(`LIQUIDITY REMOVED SUCCESSFULLY!\n${explorerUrl}`);
       await loadPoolsFromChain();
     } catch (e: any) {
-      setLiquidityStatus(`Remove liquidity failed: ${e.message}`);
+      setLiquidityStatus(`REMOVE LIQUIDITY FAILED: ${e.message}`);
     }
   };
 
   return (
-    <div className="liquidity-pools-single-column">
-      <div className="main-card">
-        <div className="card-header">
-          <span className="card-title">LIQUIDITY POOLS</span>
+    <div className="liquidity-pools-two-columns">
+      {/* LEFT COLUMN - LIQUIDITY POOLS */}
+      <div className="left-column">
+        <div className="column-header">LIQUIDITY POOLS</div>
+        
+        <div className="section-title">CREATE LIQUIDITY POOL</div>
+        
+        <div className="form-group">
+          <label>TOKEN A MINT ADDRESS</label>
+          <input
+            type="text"
+            value={tokenAMint}
+            onChange={(e) => setTokenAMint(e.target.value)}
+            placeholder="YOUR TOKEN MINT ADDRESS"
+          />
         </div>
 
-        <div className="section-divider">
-          <div className="section-title">CREATE LIQUIDITY POOL</div>
+        <div className="form-group">
+          <label>TOKEN B MINT ADDRESS</label>
+          <input
+            type="text"
+            value={tokenBMint}
+            onChange={(e) => setTokenBMint(e.target.value)}
+            placeholder="USDC OR SOL MINT ADDRESS"
+          />
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>TOKEN A MINT ADDRESS</label>
-            <input
-              type="text"
-              value={tokenAMint}
-              onChange={(e) => setTokenAMint(e.target.value)}
-              placeholder="Your token mint address"
-            />
-          </div>
-          <div className="form-group">
-            <label>TOKEN B MINT ADDRESS</label>
-            <input
-              type="text"
-              value={tokenBMint}
-              onChange={(e) => setTokenBMint(e.target.value)}
-              placeholder="USDC or SOL mint address"
-            />
-          </div>
-          <div className="form-group">
-            <label>FEE BPS 100 = 1 PERCENT</label>
-            <input 
-              type="number" 
-              value={feeBps} 
-              onChange={(e) => setFeeBps(parseInt(e.target.value))}
-              min="0"
-              max="500"
-            />
-            <small>Recommended: 25 (0.25%)</small>
-          </div>
+        <div className="form-group">
+          <label>FEE BPS (100 = 1%)</label>
+          <input 
+            type="number" 
+            value={feeBps} 
+            onChange={(e) => setFeeBps(parseInt(e.target.value))}
+            min="0"
+            max="500"
+          />
+          <small>RECOMMENDED: 25 (0.25%)</small>
         </div>
 
-        <button className="action-button" onClick={handleCreatePool}>
+        <button className="create-btn" onClick={handleCreatePool}>
           CREATE POOL
         </button>
 
@@ -284,228 +281,206 @@ const LiquidityPoolsPage: React.FC = () => {
           </div>
         )}
 
-        <div className="section-divider">
-          <div className="section-title">SELECT POOL</div>
-        </div>
-
-        <div className="form-row">
-          <div className="form-group" style={{ width: '100%' }}>
-            <label>CHOOSE POOL</label>
-            <select 
-              value={selectedPool?.poolAddress || ''} 
-              onChange={(e) => {
-                const pool = pools.find(p => p.poolAddress === e.target.value);
-                setSelectedPool(pool);
-              }}
-            >
-              <option value="">SELECT A POOL</option>
-              {pools.map((p, idx) => (
-                <option key={idx} value={p.poolAddress}>
-                  {p.symbolA} / {p.symbolB} - Fee: {p.fee / 100}%
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Pool Details Card */}
-        <div className="pool-details-card">
-          <div className="card-header">
-            <span className="card-title">POOL DETAILS</span>
-          </div>
-          <div className="card-content-placeholder">
-            Pool details will appear here
-          </div>
-        </div>
-
-        {selectedPool && (
-          <>
-            <div className="section-divider">
-              <div className="section-title">POOL STATISTICS</div>
-            </div>
-            <div className="status-area">
-              Reserve A: {selectedPool.reserveA / 1e6} {selectedPool.symbolA}<br />
-              Reserve B: {selectedPool.reserveB / 1e6} {selectedPool.symbolB}<br />
-              Total LP Supply: {selectedPool.totalLp / 1e9}<br />
-              Total Volume: {selectedPool.totalVolume / 1e6 || 0}<br />
-              Your LP Tokens: {selectedPool.userLpBalance / 1e9 || 0}
-            </div>
-
-            <div className="section-divider">
-              <div className="section-title">ADD LIQUIDITY</div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>{selectedPool.symbolA} AMOUNT</label>
-                <input
-                  type="number"
-                  value={addAmountA}
-                  onChange={(e) => setAddAmountA(e.target.value)}
-                  placeholder={`Amount of ${selectedPool.symbolA}`}
-                />
-              </div>
-              <div className="form-group">
-                <label>{selectedPool.symbolB} AMOUNT</label>
-                <input
-                  type="number"
-                  value={addAmountB}
-                  onChange={(e) => setAddAmountB(e.target.value)}
-                  placeholder={`Amount of ${selectedPool.symbolB}`}
-                />
-              </div>
-            </div>
-
-            <button className="action-button" onClick={handleAddLiquidity}>
-              ADD LIQUIDITY
-            </button>
-
-            <div className="section-divider">
-              <div className="section-title">SWAP TOKENS</div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>SWAP {selectedPool.symbolA} TO {selectedPool.symbolB}</label>
-                <input
-                  type="number"
-                  value={swapAmount}
-                  onChange={(e) => setSwapAmount(e.target.value)}
-                  placeholder={`Amount of ${selectedPool.symbolA}`}
-                />
-              </div>
-            </div>
-
-            <button className="action-button" onClick={handleSwap}>
-              SWAP TOKENS
-            </button>
-
-            {swapStatus && (
-              <div className="status-area">
-                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{swapStatus}</pre>
-              </div>
-            )}
-
-            <div className="section-divider">
-              <div className="section-title">REMOVE LIQUIDITY</div>
-            </div>
-
-            <button 
-              className="action-button remove-btn" 
-              onClick={() => handleRemoveLiquidity((selectedPool.userLpBalance || 0) / 1e9)}
-            >
-              REMOVE ALL LIQUIDITY
-            </button>
-          </>
-        )}
-
-        {liquidityStatus && (
-          <div className="status-area">
-            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{liquidityStatus}</pre>
-          </div>
-        )}
-
-        <div className="section-divider">
-          <div className="section-title">ALL POOLS</div>
-        </div>
-
-        <div className="all-pools-area">
+        <div className="section-title" style={{ marginTop: '24px' }}>ALL POOLS</div>
+        
+        <div className="all-pools-list">
           {pools.length === 0 ? (
-            'No liquidity pools yet'
+            <div className="empty-message">NO LIQUIDITY POOLS YET</div>
           ) : (
             pools.map((p, idx) => (
-              <div key={idx} style={{ marginBottom: '8px' }}>
-                Pool #{idx + 1}: <strong>{p.symbolA}/{p.symbolB}</strong> | 
-                Fee: {p.fee / 100}% | 
-                Reserves: {p.reserveA / 1e6} {p.symbolA} / {p.reserveB / 1e6} {p.symbolB}
+              <div 
+                key={idx} 
+                className={`pool-item ${selectedPool?.poolAddress === p.poolAddress ? 'active' : ''}`}
+                onClick={() => setSelectedPool(p)}
+              >
+                <div className="pool-pair">{p.symbolA}/{p.symbolB}</div>
+                <div className="pool-fee">FEE: {p.fee / 100}%</div>
+                <div className="pool-reserves">
+                  {p.reserveA / 1e6} {p.symbolA} / {p.reserveB / 1e6} {p.symbolB}
+                </div>
               </div>
             ))
           )}
         </div>
       </div>
 
+      {/* RIGHT COLUMN - SELECT POOL */}
+      <div className="right-column">
+        <div className="column-header">SELECT POOL</div>
+        
+        {!selectedPool ? (
+          <div className="empty-selection">
+            <div className="empty-icon"></div>
+            <div className="empty-text">SELECT A POOL FROM THE LEFT COLUMN</div>
+          </div>
+        ) : (
+          <>
+            <div className="selected-pool-header">
+              <div className="selected-pool-pair">{selectedPool.symbolA}/{selectedPool.symbolB}</div>
+              <div className="selected-pool-fee">FEE: {selectedPool.fee / 100}%</div>
+            </div>
+
+            <div className="info-section">
+              <div className="info-section-header">POOL STATISTICS</div>
+              <div className="stat-row">
+                <span className="stat-label">RESERVE A:</span>
+                <span className="stat-value">{selectedPool.reserveA / 1e6} {selectedPool.symbolA}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">RESERVE B:</span>
+                <span className="stat-value">{selectedPool.reserveB / 1e6} {selectedPool.symbolB}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">TOTAL LP SUPPLY:</span>
+                <span className="stat-value">{selectedPool.totalLp / 1e9}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">TOTAL VOLUME:</span>
+                <span className="stat-value">{selectedPool.totalVolume / 1e6 || 0}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">YOUR LP TOKENS:</span>
+                <span className="stat-value">{selectedPool.userLpBalance / 1e9 || 0}</span>
+              </div>
+            </div>
+
+            <div className="info-section">
+              <div className="info-section-header">ADD LIQUIDITY</div>
+              <div className="form-row">
+                <div className="form-group half">
+                  <label>{selectedPool.symbolA} AMOUNT</label>
+                  <input
+                    type="number"
+                    value={addAmountA}
+                    onChange={(e) => setAddAmountA(e.target.value)}
+                    placeholder={`AMOUNT OF ${selectedPool.symbolA}`}
+                  />
+                </div>
+                <div className="form-group half">
+                  <label>{selectedPool.symbolB} AMOUNT</label>
+                  <input
+                    type="number"
+                    value={addAmountB}
+                    onChange={(e) => setAddAmountB(e.target.value)}
+                    placeholder={`AMOUNT OF ${selectedPool.symbolB}`}
+                  />
+                </div>
+              </div>
+              <button className="action-btn add-btn" onClick={handleAddLiquidity}>
+                ADD LIQUIDITY
+              </button>
+            </div>
+
+            <div className="info-section">
+              <div className="info-section-header">SWAP TOKENS</div>
+              <div className="form-group">
+                <label>SWAP {selectedPool.symbolA} TO {selectedPool.symbolB}</label>
+                <input
+                  type="number"
+                  value={swapAmount}
+                  onChange={(e) => setSwapAmount(e.target.value)}
+                  placeholder={`AMOUNT OF ${selectedPool.symbolA}`}
+                />
+              </div>
+              <button className="action-btn swap-btn" onClick={handleSwap}>
+                SWAP TOKENS
+              </button>
+            </div>
+
+            <div className="info-section">
+              <div className="info-section-header">REMOVE LIQUIDITY</div>
+              <button 
+                className="action-btn remove-btn" 
+                onClick={() => handleRemoveLiquidity((selectedPool.userLpBalance || 0) / 1e9)}
+              >
+                REMOVE ALL LIQUIDITY
+              </button>
+            </div>
+
+            {liquidityStatus && (
+              <div className="status-area">
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{liquidityStatus}</pre>
+              </div>
+            )}
+
+            {swapStatus && (
+              <div className="status-area">
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{swapStatus}</pre>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       <style>{`
-        .liquidity-pools-single-column {
+        .liquidity-pools-two-columns {
+          display: flex;
           width: 100%;
-          padding: 20px;
+          min-height: 100vh;
           background: linear-gradient(135deg, #0f1419 0%, #151d28 100%);
-          border-radius: 16px;
-          min-height: 600px;
+          margin: 0;
+          padding: 0;
         }
 
-        .main-card {
-          max-width: 800px;
-          margin: 0 auto;
-          background: rgba(12, 17, 26, 0.8);
-          border-radius: 12px;
-          border: 1px solid #232a36;
+        .left-column,
+        .right-column {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          background: rgba(12, 17, 26, 0.9);
           padding: 24px;
-          backdrop-filter: blur(10px);
+          overflow-y: auto;
+          min-height: 100vh;
         }
 
-        .card-header {
-          padding-bottom: 16px;
-          margin-bottom: 16px;
-          border-bottom: 2px solid #232a36;
+        .left-column {
+          border-right: 1px solid #232a36;
         }
 
-        .card-title {
-          font-size: 18px;
+        .column-header {
+          font-size: 20px;
           font-weight: 700;
           color: #6c9bd2;
+          margin-bottom: 24px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #6c9bd2;
           letter-spacing: 1px;
-        }
-
-        .section-divider {
-          margin: 24px 0 16px 0;
-          padding-top: 8px;
-          border-top: 1px solid #232a36;
+          text-align: center;
         }
 
         .section-title {
           font-size: 14px;
-          font-weight: 600;
+          font-weight: 700;
           color: #8e9bae;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .form-row {
-          display: flex;
-          gap: 16px;
           margin-bottom: 16px;
-          flex-wrap: wrap;
+          letter-spacing: 1px;
         }
 
         .form-group {
-          flex: 1;
-          min-width: 180px;
+          margin-bottom: 20px;
         }
 
         .form-group label {
           display: block;
           font-size: 11px;
-          font-weight: 600;
+          font-weight: 700;
           color: #8e9bae;
-          text-transform: uppercase;
           margin-bottom: 8px;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
         }
 
-        .form-group input,
-        .form-group select {
+        .form-group input {
           width: 100%;
-          padding: 10px 12px;
+          padding: 12px;
           background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 8px;
           color: #e6edf5;
-          font-size: 14px;
+          font-size: 13px;
           transition: all 0.2s;
         }
 
-        .form-group input:focus,
-        .form-group select:focus {
+        .form-group input:focus {
           outline: none;
           border-color: #6c9bd2;
           box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
@@ -518,7 +493,16 @@ const LiquidityPoolsPage: React.FC = () => {
           color: #5a6e8a;
         }
 
-        .action-button {
+        .form-row {
+          display: flex;
+          gap: 12px;
+        }
+
+        .form-group.half {
+          flex: 1;
+        }
+
+        .create-btn {
           width: 100%;
           padding: 12px;
           background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
@@ -526,25 +510,51 @@ const LiquidityPoolsPage: React.FC = () => {
           border-radius: 8px;
           color: white;
           font-size: 13px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
           margin-top: 8px;
         }
 
-        .action-button:hover {
+        .create-btn:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(108, 155, 210, 0.3);
         }
 
-        .remove-btn {
-          background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        .action-btn {
+          width: 100%;
+          padding: 12px;
+          border: none;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          letter-spacing: 1px;
+          margin-top: 8px;
         }
 
-        .remove-btn:hover {
-          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        .add-btn {
+          background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
+          color: white;
+        }
+
+        .swap-btn {
+          background: rgba(108, 155, 210, 0.2);
+          border: 1px solid #6c9bd2;
+          color: #6c9bd2;
+        }
+
+        .remove-btn {
+          background: rgba(220, 38, 38, 0.2);
+          border: 1px solid #dc2626;
+          color: #dc2626;
+        }
+
+        .action-btn:hover {
+          transform: translateY(-1px);
+          filter: brightness(1.05);
         }
 
         .status-area {
@@ -553,68 +563,200 @@ const LiquidityPoolsPage: React.FC = () => {
           background: #0c111a;
           border-radius: 8px;
           border: 1px solid #1e2a3a;
-          font-size: 12px;
+          font-size: 11px;
           color: #e6edf5;
           line-height: 1.5;
           word-break: break-all;
         }
 
-        .all-pools-area {
-          margin-top: 16px;
-          padding: 12px;
-          background: #0c111a;
-          border-radius: 8px;
-          border: 1px solid #1e2a3a;
-          font-size: 12px;
-          color: #8e9bae;
-          line-height: 1.6;
+        .all-pools-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          max-height: 400px;
+          overflow-y: auto;
         }
 
-        /* Pool Details Card */
-        .pool-details-card {
-          margin: 20px 0;
+        .pool-item {
+          padding: 12px;
+          background: #0a0e15;
+          border: 1px solid #232a36;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .pool-item:hover {
+          border-color: #6c9bd2;
+          background: #0f1419;
+          transform: translateX(4px);
+        }
+
+        .pool-item.active {
+          border-color: #6c9bd2;
+          background: rgba(108, 155, 210, 0.1);
+        }
+
+        .pool-pair {
+          font-size: 14px;
+          font-weight: 700;
+          color: #6c9bd2;
+          margin-bottom: 6px;
+        }
+
+        .pool-fee {
+          font-size: 11px;
+          color: #8e9bae;
+          margin-bottom: 6px;
+        }
+
+        .pool-reserves {
+          font-size: 10px;
+          color: #5a6e8a;
+        }
+
+        .empty-message {
+          text-align: center;
+          padding: 40px;
+          color: #5a6e8a;
+          font-size: 13px;
+          letter-spacing: 1px;
+        }
+
+        .empty-selection {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 400px;
+          background: #0a0e15;
+          border: 2px dashed #232a36;
+          border-radius: 12px;
+          margin-top: 40px;
+        }
+
+        .empty-text {
+          font-size: 14px;
+          color: #5a6e8a;
+          letter-spacing: 1px;
+          text-align: center;
+        }
+
+        .selected-pool-header {
+          background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
+          border: 1px solid #6c9bd2;
+          border-radius: 12px;
+          padding: 16px;
+          text-align: center;
+          margin-bottom: 20px;
+        }
+
+        .selected-pool-pair {
+          font-size: 18px;
+          font-weight: 700;
+          color: #6c9bd2;
+          margin-bottom: 8px;
+        }
+
+        .selected-pool-fee {
+          font-size: 12px;
+          color: #8e9bae;
+        }
+
+        .info-section {
           background: #0c111a;
           border-radius: 12px;
           border: 1px solid #1e2a3a;
+          margin-bottom: 20px;
           overflow: hidden;
         }
 
-        .pool-details-card .card-header {
-          padding: 16px 20px;
-          margin-bottom: 0;
+        .info-section-header {
+          padding: 12px 16px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
           border-bottom: 1px solid #1e2a3a;
+          font-size: 12px;
+          font-weight: 700;
+          color: #6c9bd2;
+          letter-spacing: 1px;
         }
 
-        .pool-details-card .card-title {
-          font-size: 14px;
+        .stat-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 16px;
+          border-bottom: 1px solid #1e2a3a;
+          font-size: 12px;
+        }
+
+        .stat-row:last-child {
+          border-bottom: none;
+        }
+
+        .stat-label {
+          color: #8e9bae;
           font-weight: 600;
         }
 
-        .card-content-placeholder {
-          padding: 40px 20px;
-          text-align: center;
-          color: #5a6e8a;
-          font-size: 14px;
-          letter-spacing: 0.5px;
+        .stat-value {
+          color: #e6edf5;
+          font-weight: 500;
+        }
+
+        .left-column::-webkit-scrollbar,
+        .right-column::-webkit-scrollbar,
+        .all-pools-list::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .left-column::-webkit-scrollbar-track,
+        .right-column::-webkit-scrollbar-track,
+        .all-pools-list::-webkit-scrollbar-track {
+          background: #0c111a;
+          border-radius: 3px;
+        }
+
+        .left-column::-webkit-scrollbar-thumb,
+        .right-column::-webkit-scrollbar-thumb,
+        .all-pools-list::-webkit-scrollbar-thumb {
+          background: #232a36;
+          border-radius: 3px;
+        }
+
+        .left-column::-webkit-scrollbar-thumb:hover,
+        .right-column::-webkit-scrollbar-thumb:hover,
+        .all-pools-list::-webkit-scrollbar-thumb:hover {
+          background: #6c9bd2;
+        }
+
+        @media (max-width: 1024px) {
+          .liquidity-pools-two-columns {
+            flex-direction: column;
+          }
+
+          .left-column {
+            border-right: none;
+            border-bottom: 1px solid #232a36;
+          }
+
+          .left-column,
+          .right-column {
+            min-height: auto;
+          }
         }
 
         @media (max-width: 768px) {
-          .liquidity-pools-single-column {
-            padding: 12px;
-          }
-
-          .main-card {
+          .left-column,
+          .right-column {
             padding: 16px;
           }
 
           .form-row {
             flex-direction: column;
-            gap: 12px;
           }
 
-          .form-group {
-            min-width: auto;
+          .column-header {
+            font-size: 18px;
           }
         }
       `}</style>
