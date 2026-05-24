@@ -1,16 +1,13 @@
 name = "max-dex"
-type = "javascript"
 compatibility_date = "2024-01-01"
 
 [build]
 command = "npm run build"
 cwd = "./"
-watch_paths = ["src/**/*.tsx", "src/**/*.ts", "public/**/*"]
+
+[pages]
+# This tells Wrangler this is a Pages project
+build_output_directory = "public"
 
 [env.production]
-routes = [
-  { pattern = "example.com", zone_name = "example.com" }
-]
-
-[[staticAssets]]
-binding = "ASSETS"
+# Pages doesn't use routes like Workers - remove them
