@@ -20,28 +20,23 @@ const MyTokensPage: React.FC = () => {
     alert('Mint copied!');
   };
 
-  // Filter and sort tokens
   const getFilteredTokens = () => {
     let filtered = [...deployedTokens];
-    
-    // Filter by verification status
+
     if (selectedFilterStatus === 'verified') {
       filtered = filtered.filter(t => t.isVerified);
     } else if (selectedFilterStatus === 'unverified') {
       filtered = filtered.filter(t => !t.isVerified);
     }
-    
-    // Filter by token type (mock filter - you can customize based on your data structure)
+
     if (selectedTokenType === 'meme') {
       filtered = filtered.filter(t => t.symbol?.toLowerCase().includes('meme') || t.name?.toLowerCase().includes('meme'));
     } else if (selectedTokenType === 'utility') {
       filtered = filtered.filter(t => t.symbol?.toLowerCase().includes('utility') || t.name?.toLowerCase().includes('utility'));
     }
-    
-    // Sort tokens
+
     if (selectedSortBy === 'recent') {
-      // Assuming tokens have timestamp, otherwise keep as is
-      filtered = filtered.reverse();
+      filtered = filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     } else if (selectedSortBy === 'name') {
       filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     } else if (selectedSortBy === 'symbol') {
@@ -49,7 +44,7 @@ const MyTokensPage: React.FC = () => {
     } else if (selectedSortBy === 'supply') {
       filtered.sort((a, b) => (parseInt(b.totalSupply || '0') - parseInt(a.totalSupply || '0')));
     }
-    
+
     return filtered;
   };
 
@@ -90,20 +85,20 @@ const MyTokensPage: React.FC = () => {
         return (
           <>
             <div className="token-detail-row">
-              <span className="detail-label">Price:</span>
-              <span className="detail-value">$0.00</span>
+              <span className="detail-label">Status:</span>
+              <span className="detail-value">{token.isVerified ? 'Verified' : 'Unverified'}</span>
             </div>
             <div className="token-detail-row">
-              <span className="detail-label">Market Cap:</span>
-              <span className="detail-value">$0.00</span>
+              <span className="detail-label">Deployment Status:</span>
+              <span className="detail-value">{token.deploymentStatus || 'Pending'}</span>
             </div>
             <div className="token-detail-row">
-              <span className="detail-label">Holders:</span>
-              <span className="detail-value">0</span>
+              <span className="detail-label">Created:</span>
+              <span className="detail-value">{new Date(token.timestamp || 0).toLocaleDateString()}</span>
             </div>
             <div className="token-detail-row">
-              <span className="detail-label">Volume (24h):</span>
-              <span className="detail-value">$0.00</span>
+              <span className="detail-label">Freeze Authority:</span>
+              <span className="detail-value">{token.freezeAuthority ? 'Enabled' : 'Disabled'}</span>
             </div>
           </>
         );
