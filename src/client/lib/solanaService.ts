@@ -10,6 +10,7 @@ export async function connectWallet(): Promise<any> {
 export async function getTokenMetadata(mint: string): Promise<any> {
   try {
     const { PublicKey, Connection } = await import("@solana/web3.js");
+    const { getMint } = await import("@solana/spl-token");
 
     const connection = new Connection("https://api.mainnet-beta.solana.com");
     const mintPubkey = new PublicKey(mint);
@@ -24,13 +25,14 @@ export async function getTokenMetadata(mint: string): Promise<any> {
     )[0];
 
     const metadataAccount = await connection.getAccountInfo(metadataPDA);
+    const mintAccount = await getMint(connection, mintPubkey);
 
     if (!metadataAccount) {
       return {
         mint: mint,
         name: "Unknown Token",
         symbol: "???",
-        decimals: 0,
+        decimals: Number(mintAccount.decimals),
         fetched: false,
         timestamp: new Date().toISOString(),
       };
@@ -42,20 +44,20 @@ export async function getTokenMetadata(mint: string): Promise<any> {
     offset += 32;
     offset += 32;
 
-    const nameLength = buffer[offset];
+    const nameLength = buffer.readUInt32LE(offset);
     offset += 4;
     const name = buffer.slice(offset, offset + nameLength).toString('utf8');
     offset += nameLength;
 
-    const symbolLength = buffer[offset];
+    const symbolLength = buffer.readUInt32LE(offset);
     offset += 4;
     const symbol = buffer.slice(offset, offset + symbolLength).toString('utf8');
 
     return {
       mint: mint,
-      name: name,
-      symbol: symbol,
-      decimals: 6,
+      name: name.trim(),
+      symbol: symbol.trim(),
+      decimals: Number(mintAccount.decimals),
       fetched: true,
       timestamp: new Date().toISOString(),
     };
@@ -91,11 +93,20 @@ export async function getTokenHolders(mint: string): Promise<any[]> {
 
     return tokenAccounts
       .slice(0, 20)
-      .map((account) => ({
-        owner: account.pubkey.toString(),
-        balance: "0",
-        address: account.pubkey.toString(),
-      }));
+      .map((account) => {
+        const data = account.account.data;
+        const ownerOffset = 32;
+        const ownerPubkey = new PublicKey(data.slice(ownerOffset, ownerOffset + 32));
+
+        const amountOffset = 64;
+        const amount = data.readBigUInt64LE(amountOffset);
+
+        return {
+          owner: ownerPubkey.toString(),
+          address: account.pubkey.toString(),
+          balance: amount.toString(),
+        };
+      });
   } catch (error) {
     console.error(`Failed to fetch token holders for ${mint}:`, error);
     return [];

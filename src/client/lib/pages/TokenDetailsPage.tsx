@@ -57,15 +57,31 @@ const TokenDetailsPage: React.FC = () => {
       const { Connection, PublicKey } = await import("@solana/web3.js");
       const connection = new Connection("https://api.mainnet-beta.solana.com");
       const mintPubkey = new PublicKey(selectedTokenForDetails);
+      const tokenProgramId = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQQfimJwWCmRJBn1g");
 
-      const signatures = await connection.getSignaturesForAddress(mintPubkey, { limit: 100 });
-      const txData = signatures.map((sig) => ({
-        signature: sig.signature,
-        timestamp: sig.blockTime || 0,
-        status: sig.err ? 'failed' : 'success',
-      }));
+      const tokenAccounts = await connection.getProgramAccounts(tokenProgramId, {
+        filters: [
+          { memcmp: { offset: 0, bytes: mintPubkey.toBase58() } },
+        ],
+      });
+
+      const allSignatures: any[] = [];
+      for (const account of tokenAccounts.slice(0, 10)) {
+        const sigs = await connection.getSignaturesForAddress(account.pubkey, { limit: 20 });
+        allSignatures.push(...sigs);
+      }
+
+      const uniqueSigs = Array.from(new Map(allSignatures.map(s => [s.signature, s])).values());
+      const txData = uniqueSigs
+        .sort((a, b) => (b.blockTime || 0) - (a.blockTime || 0))
+        .slice(0, 50)
+        .map((sig) => ({
+          signature: sig.signature,
+          timestamp: sig.blockTime || 0,
+          status: sig.err ? 'failed' : 'success',
+        }));
+
       setTransactions(txData);
-
       setChartData([
         { time: '24h ago', price: 0 },
         { time: 'now', price: 0 },
