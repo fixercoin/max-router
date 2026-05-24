@@ -22,18 +22,20 @@ const SwapRouterPage: React.FC = () => {
   ];
 
   // Create allTokens array after deployedTokens is available
-  const allTokens = [
-    ...baseTokens,
-    ...deployedTokens.map(t => ({
-      symbol: t.symbol,
-      mint: t.mint,
-      decimals: t.decimals,
-      price: Math.random() * 100,
-      change24h: (Math.random() * 20) - 10,
-      volume: Math.random() * 100000,
-      logo: t.logo || null
-    }))
-  ];
+  const allTokens = React.useMemo(() => {
+    return [
+      ...baseTokens,
+      ...deployedTokens.map(t => ({
+        symbol: t.symbol,
+        mint: t.mint,
+        decimals: t.decimals,
+        price: Math.random() * 100,
+        change24h: (Math.random() * 20) - 10,
+        volume: Math.random() * 100000,
+        logo: t.logo || null
+      }))
+    ];
+  }, [deployedTokens]);
 
   // Fetch token prices from DexScreener API
   const fetchTokenPrice = async (mintAddress: string) => {
@@ -73,22 +75,26 @@ const SwapRouterPage: React.FC = () => {
     if (allTokens.length > 0) {
       fetchAllPrices();
     }
-  }, [deployedTokens]);
+  }, [allTokens]);
 
   // Update token objects with real-time prices
-  const tokensWithPrices = allTokens.map(token => ({
-    ...token,
-    price: tokenPrices[token.mint]?.price || token.price,
-    change24h: tokenPrices[token.mint]?.change24h || token.change24h,
-    volume24h: tokenPrices[token.mint]?.volume24h || token.volume,
-    liquidity: tokenPrices[token.mint]?.liquidity || 0,
-  }));
+  const tokensWithPrices = React.useMemo(() => {
+    return allTokens.map(token => ({
+      ...token,
+      price: tokenPrices[token.mint]?.price || token.price,
+      change24h: tokenPrices[token.mint]?.change24h || token.change24h,
+      volume24h: tokenPrices[token.mint]?.volume24h || token.volume,
+      liquidity: tokenPrices[token.mint]?.liquidity || 0,
+    }));
+  }, [allTokens, tokenPrices]);
 
   // Filter tokens based on search query
-  const filteredTokens = tokensWithPrices.filter(token =>
-    token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    token.mint.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTokens = React.useMemo(() => {
+    return tokensWithPrices.filter(token =>
+      token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      token.mint.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [tokensWithPrices, searchQuery]);
 
   // Find pool when tokens are selected and fetch real reserves
   useEffect(() => {
@@ -329,7 +335,7 @@ const SwapRouterPage: React.FC = () => {
         </div>
 
         <div className="chart-stats">
-          {tokenPrices[selectedChartToken] && (
+          {tokenPrices[selectedChartToken] ? (
             <>
               <div className="chart-stat-item">
                 <span className="chart-stat-label">24H VOLUME</span>
@@ -357,8 +363,7 @@ const SwapRouterPage: React.FC = () => {
                 </span>
               </div>
             </>
-          )}
-          {!tokenPrices[selectedChartToken] && (
+          ) : (
             <>
               <div className="chart-stat-item">
                 <span className="chart-stat-label">24H VOLUME</span>
