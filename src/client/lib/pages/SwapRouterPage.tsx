@@ -15,6 +15,26 @@ const SwapRouterPage: React.FC = () => {
   const [tokenPrices, setTokenPrices] = useState<Record<string, any>>({});
   const [selectedChartToken, setSelectedChartToken] = useState<string>('So11111111111111111111111111111111111111112');
 
+  // Define base tokens
+  const baseTokens = [
+    { symbol: 'USDC', mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr', decimals: 6, price: 1.00, change24h: 0.05, volume: 1250000, logo: null },
+    { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', decimals: 9, price: 145.20, change24h: 2.5, volume: 890000, logo: null },
+  ];
+
+  // Create allTokens array after deployedTokens is available
+  const allTokens = [
+    ...baseTokens,
+    ...deployedTokens.map(t => ({
+      symbol: t.symbol,
+      mint: t.mint,
+      decimals: t.decimals,
+      price: Math.random() * 100,
+      change24h: (Math.random() * 20) - 10,
+      volume: Math.random() * 100000,
+      logo: t.logo || null
+    }))
+  ];
+
   // Fetch token prices from DexScreener API
   const fetchTokenPrice = async (mintAddress: string) => {
     try {
@@ -50,7 +70,9 @@ const SwapRouterPage: React.FC = () => {
       setTokenPrices(prices);
     };
     
-    fetchAllPrices();
+    if (allTokens.length > 0) {
+      fetchAllPrices();
+    }
   }, [deployedTokens]);
 
   // Update token objects with real-time prices
@@ -59,6 +81,7 @@ const SwapRouterPage: React.FC = () => {
     price: tokenPrices[token.mint]?.price || token.price,
     change24h: tokenPrices[token.mint]?.change24h || token.change24h,
     volume24h: tokenPrices[token.mint]?.volume24h || token.volume,
+    liquidity: tokenPrices[token.mint]?.liquidity || 0,
   }));
 
   // Filter tokens based on search query
