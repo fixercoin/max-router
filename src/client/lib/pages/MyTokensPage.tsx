@@ -222,7 +222,12 @@ const MyTokensPage: React.FC = () => {
             </div>
           ) : (
             filteredTokens.map((token) => (
-              <div key={token.mint} className="token-card">
+              <div
+                key={token.mint}
+                className="token-card"
+                onClick={() => handleViewToken(token.mint)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="token-card-header">
                   <div className="token-title-section">
                     <h4 className="token-symbol">{token.symbol}</h4>
@@ -232,21 +237,27 @@ const MyTokensPage: React.FC = () => {
                     <div className="verified-badge">✓ Verified</div>
                   )}
                 </div>
-                
+
                 <div className="token-card-content">
                   {getTokenDetailsContent(token)}
                 </div>
-                
+
                 <div className="token-card-actions">
                   <button
                     className="token-action-btn copy-btn"
-                    onClick={() => handleCopyMint(token.mint)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyMint(token.mint);
+                    }}
                   >
                     📋 Copy Mint
                   </button>
                   <button
                     className="token-action-btn view-btn"
-                    onClick={() => handleViewToken(token.mint)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewToken(token.mint);
+                    }}
                   >
                     👁 View Details
                   </button>
@@ -404,13 +415,19 @@ const MyTokensPage: React.FC = () => {
           border-radius: 12px;
           border: 1px solid #1e2a3a;
           overflow: hidden;
-          transition: all 0.2s;
+          transition: all 0.3s ease;
+          user-select: none;
         }
 
         .token-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(108, 155, 210, 0.15);
           border-color: #6c9bd2;
+          background: #0f1419;
+        }
+
+        .token-card:active {
+          transform: translateY(-2px);
         }
 
         .token-card-header {
