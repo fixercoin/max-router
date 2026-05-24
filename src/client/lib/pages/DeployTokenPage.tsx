@@ -159,251 +159,234 @@ const DeployTokenPage: React.FC = () => {
   };
 
   return (
-    <div className="deploy-token-two-column-layout">
-      {/* LEFT CARD - DEPLOYMENT SETTINGS */}
-      <div className="left-card">
-        <div className="card-title-main">DEPLOYMENT SETTINGS</div>
-        
-        <div className="status-card">
-          <div className="status-header">
-            <span className="status-title">CONNECTION STATUS</span>
-          </div>
-          <div className="status-content">
-            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0, textTransform: 'uppercase' }}>{status}</pre>
-          </div>
-        </div>
-
-        <div className="dropdown-group">
-          <label className="dropdown-label">TOKEN PRESET</label>
-          <select 
-            className="dropdown-select"
-            value={selectedPreset}
-            onChange={(e) => handlePresetChange(e.target.value)}
-          >
-            <option value="custom">CUSTOM TOKEN</option>
-            <option value="meme">MEME TOKEN</option>
-            <option value="utility">UTILITY TOKEN</option>
-            <option value="governance">GOVERNANCE TOKEN</option>
-          </select>
-        </div>
-
-        <div className="dropdown-group">
-          <label className="dropdown-label">NETWORK</label>
-          <select 
-            className="dropdown-select"
-            value={selectedNetwork}
-            onChange={(e) => setSelectedNetwork(e.target.value)}
-          >
-            <option value="devnet">DEVNET TEST</option>
-            <option value="mainnet-beta">MAINNET PRODUCTION</option>
-          </select>
-        </div>
-
-        <div className="dropdown-group">
-          <label className="dropdown-label">TOKEN STANDARD</label>
-          <select 
-            className="dropdown-select"
-            value={selectedTokenStandard}
-            onChange={(e) => setSelectedTokenStandard(e.target.value)}
-          >
-            <option value="spl">SPL TOKEN</option>
-            <option value="spl2022">SPL TOKEN 2022</option>
-          </select>
-        </div>
-
-        <div className="dropdown-group">
-          <label className="dropdown-label">MINT AUTHORITY</label>
-          <select 
-            className="dropdown-select"
-            value={selectedMintAuthority}
-            onChange={(e) => setSelectedMintAuthority(e.target.value)}
-          >
-            <option value="wallet">CURRENT WALLET</option>
-            <option value="multisig">MULTI-SIG COMING SOON</option>
-            <option value="timelock">TIME-LOCK COMING SOON</option>
-          </select>
-        </div>
-
-        <div className="quick-options">
-          <label className="dropdown-label">QUICK SUPPLY OPTIONS</label>
-          <div className="supply-buttons">
-            <button onClick={() => handleQuickFill('small')} className="supply-btn">10K</button>
-            <button onClick={() => handleQuickFill('medium')} className="supply-btn">1M</button>
-            <button onClick={() => handleQuickFill('large')} className="supply-btn">1B</button>
-          </div>
-        </div>
-
-        <div className="info-card">
-          <div className="info-text">
-            <strong>DEPLOYMENT INFO</strong><br />
-            FEE: 0.05 SOL<br />
-            TIME: 30 SECONDS<br />
-            INCLUDES METADATA<br />
-            VERIFIED BY MAX DEX
-          </div>
-        </div>
-
-        {!dexClient && (
-          <button className="action-button initialize-btn" onClick={initializeDex}>
-            INITIALIZE DEX FIRST
-          </button>
-        )}
-
-        <button 
-          className="action-button deploy-btn" 
-          onClick={handleDeployToken}
-          disabled={!dexClient && !status.includes('ALREADY INITIALIZED')}
-        >
-          DEPLOY TOKEN ON MAX DEX
-        </button>
-
-        <div className="warning-text">
-          MAKE SURE YOU HAVE ENOUGH SOL FOR DEPLOYMENT FEES
-        </div>
-
-        {deployedTokens.length > 0 && (
-          <div className="recent-card">
-            <div className="recent-header">
-              <span className="recent-title">RECENT DEPLOYMENTS</span>
-            </div>
-            <div className="recent-list">
-              {deployedTokens.slice(-3).reverse().map((token, idx) => (
-                <div key={idx} className="recent-item">
-                  {token.logo && (
-                    <img src={token.logo} alt={token.symbol} className="recent-logo" />
-                  )}
-                  {!token.logo && (
-                    <div className="recent-symbol">{token.symbol?.substring(0, 2)}</div>
-                  )}
-                  <div className="recent-details">
-                    <div>{token.name}</div>
-                    <div className="recent-supply">{token.totalSupply?.toLocaleString()} SUPPLY</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* RIGHT CARD - TOKEN CONFIGURATION */}
-      <div className="right-card">
-        <div className="card-title-main">TOKEN CONFIGURATION</div>
-        
-        {/* LOGO UPLOAD SECTION */}
-        <div className="logo-upload-section">
-          <label className="dropdown-label">TOKEN LOGO</label>
-          <div className="logo-upload-container">
-            {tokenLogo ? (
-              <div className="logo-preview">
-                <img src={tokenLogo} alt="TOKEN LOGO" className="logo-preview-img" />
-                <button 
-                  className="remove-logo-btn"
-                  onClick={() => setTokenLogo(null)}
-                >
-                  REMOVE
-                </button>
+    <div className="deploy-token-full-width">
+      {/* SINGLE CARD */}
+      <div className="main-card">
+        {/* TWO COLUMNS INSIDE CARD */}
+        <div className="two-columns-container">
+          
+          {/* LEFT COLUMN - DEPLOYMENT SETTINGS */}
+          <div className="left-column">
+            <div className="column-header">DEPLOYMENT SETTINGS</div>
+            
+            <div className="status-card">
+              <div className="status-header">
+                <span className="status-title">CONNECTION STATUS</span>
               </div>
-            ) : (
-              <div className="logo-upload-area">
-                <label className="upload-label">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="logo-input"
-                  />
-                  <div className="upload-placeholder">
-                    CLICK TO UPLOAD LOGO
-                  </div>
-                </label>
+              <div className="status-content">
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{status}</pre>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">TOKEN PRESET</label>
+              <select 
+                className="form-select"
+                value={selectedPreset}
+                onChange={(e) => handlePresetChange(e.target.value)}
+              >
+                <option value="custom">CUSTOM TOKEN</option>
+                <option value="meme">MEME TOKEN</option>
+                <option value="utility">UTILITY TOKEN</option>
+                <option value="governance">GOVERNANCE TOKEN</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">NETWORK</label>
+              <select 
+                className="form-select"
+                value={selectedNetwork}
+                onChange={(e) => setSelectedNetwork(e.target.value)}
+              >
+                <option value="devnet">DEVNET TEST</option>
+                <option value="mainnet-beta">MAINNET PRODUCTION</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">TOKEN STANDARD</label>
+              <select 
+                className="form-select"
+                value={selectedTokenStandard}
+                onChange={(e) => setSelectedTokenStandard(e.target.value)}
+              >
+                <option value="spl">SPL TOKEN</option>
+                <option value="spl2022">SPL TOKEN 2022</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">MINT AUTHORITY</label>
+              <select 
+                className="form-select"
+                value={selectedMintAuthority}
+                onChange={(e) => setSelectedMintAuthority(e.target.value)}
+              >
+                <option value="wallet">CURRENT WALLET</option>
+                <option value="multisig">MULTI-SIG COMING SOON</option>
+                <option value="timelock">TIME-LOCK COMING SOON</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">QUICK SUPPLY OPTIONS</label>
+              <div className="supply-buttons">
+                <button onClick={() => handleQuickFill('small')} className="supply-btn">10K</button>
+                <button onClick={() => handleQuickFill('medium')} className="supply-btn">1M</button>
+                <button onClick={() => handleQuickFill('large')} className="supply-btn">1B</button>
+              </div>
+            </div>
+
+            <div className="info-card">
+              <div className="info-text">
+                <strong>DEPLOYMENT INFO</strong><br />
+                FEE: 0.05 SOL<br />
+                TIME: 30 SECONDS<br />
+                INCLUDES METADATA<br />
+                VERIFIED BY MAX DEX
+              </div>
+            </div>
+
+            {!dexClient && (
+              <button className="action-btn init-btn" onClick={initializeDex}>
+                INITIALIZE DEX FIRST
+              </button>
+            )}
+
+            <button 
+              className="action-btn deploy-btn" 
+              onClick={handleDeployToken}
+              disabled={!dexClient && !status.includes('ALREADY INITIALIZED')}
+            >
+              DEPLOY TOKEN ON MAX DEX
+            </button>
+
+            <div className="warning-text">
+              MAKE SURE YOU HAVE ENOUGH SOL FOR DEPLOYMENT FEES
+            </div>
+
+            {deployedTokens.length > 0 && (
+              <div className="recent-card">
+                <div className="recent-header">RECENT DEPLOYMENTS</div>
+                <div className="recent-list">
+                  {deployedTokens.slice(-3).reverse().map((token, idx) => (
+                    <div key={idx} className="recent-item">
+                      {token.logo ? (
+                        <img src={token.logo} alt={token.symbol} className="recent-logo" />
+                      ) : (
+                        <div className="recent-logo-placeholder">{token.symbol?.substring(0, 2)}</div>
+                      )}
+                      <div className="recent-details">
+                        <div className="recent-name">{token.name}</div>
+                        <div className="recent-supply">{token.totalSupply?.toLocaleString()} SUPPLY</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        </div>
 
-        <div className="token-info-card">
-          <div className="card-header">
-            <span className="card-title">TOKEN INFORMATION</span>
-          </div>
-          <div className="card-content">
-            <div className="info-row">
-              <span className="info-label">TOKEN NAME</span>
-              <span className="info-value">{tokenName}</span>
+          {/* RIGHT COLUMN - TOKEN CONFIGURATION */}
+          <div className="right-column">
+            <div className="column-header">TOKEN CONFIGURATION</div>
+            
+            <div className="form-group">
+              <label className="form-label">TOKEN LOGO</label>
+              <div className="logo-container">
+                {tokenLogo ? (
+                  <div className="logo-preview">
+                    <img src={tokenLogo} alt="TOKEN LOGO" className="logo-img" />
+                    <button className="remove-logo" onClick={() => setTokenLogo(null)}>REMOVE</button>
+                  </div>
+                ) : (
+                  <div className="logo-upload">
+                    <label className="upload-label">
+                      <input type="file" accept="image/*" onChange={handleImageUpload} className="logo-input" />
+                      <div className="upload-placeholder">CLICK TO UPLOAD LOGO</div>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="info-row">
-              <span className="info-label">TOKEN SYMBOL</span>
-              <span className="info-value">{tokenSymbol}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">DECIMALS</span>
-              <span className="info-value">{tokenDecimals}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">TOTAL SUPPLY</span>
-              <span className="info-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">NETWORK</span>
-              <span className="info-value">{selectedNetwork.toUpperCase()}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">TOKEN STANDARD</span>
-              <span className="info-value">{selectedTokenStandard.toUpperCase()}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">ESTIMATED COST</span>
-              <span className="info-value">0.05 SOL</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="config-card">
-          <div className="card-header">
-            <span className="card-title">TOKEN DETAILS</span>
-          </div>
-          <div className="card-content">
-            <div className="form-field">
-              <label className="field-label">TOKEN NAME</label>
-              <input
-                type="text"
-                className="field-input"
-                value={tokenName}
-                onChange={(e) => setTokenName(e.target.value.toUpperCase())}
-                placeholder="MAX TOKEN"
-              />
+            <div className="info-section">
+              <div className="info-section-header">TOKEN INFORMATION</div>
+              <div className="info-row">
+                <span className="info-label">TOKEN NAME</span>
+                <span className="info-value">{tokenName}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">TOKEN SYMBOL</span>
+                <span className="info-value">{tokenSymbol}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">DECIMALS</span>
+                <span className="info-value">{tokenDecimals}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">TOTAL SUPPLY</span>
+                <span className="info-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">NETWORK</span>
+                <span className="info-value">{selectedNetwork.toUpperCase()}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">TOKEN STANDARD</span>
+                <span className="info-value">{selectedTokenStandard.toUpperCase()}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">ESTIMATED COST</span>
+                <span className="info-value">0.05 SOL</span>
+              </div>
             </div>
-            <div className="form-field">
-              <label className="field-label">SYMBOL</label>
-              <input
-                type="text"
-                className="field-input"
-                value={tokenSymbol}
-                onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
-                placeholder="MAX"
-              />
-            </div>
-            <div className="form-row-two">
-              <div className="form-field half">
-                <label className="field-label">DECIMALS</label>
+
+            <div className="info-section">
+              <div className="info-section-header">TOKEN DETAILS</div>
+              <div className="form-group">
+                <label className="form-label">TOKEN NAME</label>
                 <input
-                  type="number"
-                  className="field-input"
-                  value={tokenDecimals}
-                  onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
-                  min="0"
-                  max="9"
+                  type="text"
+                  className="form-input"
+                  value={tokenName}
+                  onChange={(e) => setTokenName(e.target.value.toUpperCase())}
+                  placeholder="MAX TOKEN"
                 />
               </div>
-              <div className="form-field half">
-                <label className="field-label">TOTAL SUPPLY</label>
+              <div className="form-group">
+                <label className="form-label">SYMBOL</label>
                 <input
-                  type="number"
-                  className="field-input"
-                  value={tokenSupply}
-                  onChange={(e) => setTokenSupply(parseInt(e.target.value))}
-                  min="1"
+                  type="text"
+                  className="form-input"
+                  value={tokenSymbol}
+                  onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
+                  placeholder="MAX"
                 />
+              </div>
+              <div className="form-row">
+                <div className="form-group half">
+                  <label className="form-label">DECIMALS</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={tokenDecimals}
+                    onChange={(e) => setTokenDecimals(parseInt(e.target.value))}
+                    min="0"
+                    max="9"
+                  />
+                </div>
+                <div className="form-group half">
+                  <label className="form-label">TOTAL SUPPLY</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={tokenSupply}
+                    onChange={(e) => setTokenSupply(parseInt(e.target.value))}
+                    min="1"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -411,38 +394,48 @@ const DeployTokenPage: React.FC = () => {
       </div>
 
       <style>{`
-        .deploy-token-two-column-layout {
-          display: flex;
-          gap: 20px;
+        .deploy-token-full-width {
           width: 100%;
-          min-height: 600px;
-          padding: 20px;
+          min-height: 100vh;
           background: linear-gradient(135deg, #0f1419 0%, #151d28 100%);
-          border-radius: 16px;
+          padding: 0;
+          margin: 0;
         }
 
-        .left-card,
-        .right-card {
-          flex: 1;
-          background: rgba(12, 17, 26, 0.8);
-          border-radius: 12px;
-          border: 1px solid #232a36;
-          padding: 20px;
+        .main-card {
+          width: 100%;
+          background: rgba(12, 17, 26, 0.95);
+          border-radius: 0;
+          border: none;
+          min-height: 100vh;
+        }
+
+        .two-columns-container {
           display: flex;
-          flex-direction: column;
-          gap: 20px;
-          backdrop-filter: blur(10px);
-          overflow-y: auto;
+          width: 100%;
+          gap: 0;
         }
 
-        .card-title-main {
-          font-size: 18px;
+        .left-column,
+        .right-column {
+          flex: 1;
+          padding: 30px;
+          background: rgba(12, 17, 26, 0.8);
+          overflow-y: auto;
+          min-height: 100vh;
+        }
+
+        .left-column {
+          border-right: 1px solid #232a36;
+        }
+
+        .column-header {
+          font-size: 20px;
           font-weight: 700;
           color: #6c9bd2;
-          margin: 0 0 8px 0;
+          margin-bottom: 24px;
           padding-bottom: 12px;
-          border-bottom: 2px solid #232a36;
-          text-align: center;
+          border-bottom: 2px solid #6c9bd2;
           letter-spacing: 1px;
         }
 
@@ -450,14 +443,10 @@ const DeployTokenPage: React.FC = () => {
           background: #0c111a;
           border-radius: 10px;
           border: 1px solid #1e2a3a;
-          overflow: hidden;
+          margin-bottom: 20px;
         }
 
         .status-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
           padding: 12px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
           border-bottom: 1px solid #1e2a3a;
@@ -472,120 +461,52 @@ const DeployTokenPage: React.FC = () => {
 
         .status-content {
           padding: 12px;
-          font-size: 11px;
+          font-size: 12px;
           color: #e6edf5;
           line-height: 1.5;
         }
 
-        .token-info-card,
-        .config-card,
-        .recent-card {
-          background: #0c111a;
-          border-radius: 12px;
-          border: 1px solid #1e2a3a;
-          overflow: hidden;
+        .form-group {
+          margin-bottom: 20px;
         }
 
-        .card-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 14px 20px;
-          background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
-          border-bottom: 1px solid #1e2a3a;
-        }
-
-        .card-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: #6c9bd2;
-          letter-spacing: 1px;
-        }
-
-        .card-content {
-          padding: 20px;
-        }
-
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          border-bottom: 1px solid #1e2a3a;
-        }
-
-        .info-row:last-child {
-          border-bottom: none;
-        }
-
-        .info-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: #8e9bae;
-          letter-spacing: 0.5px;
-        }
-
-        .info-value {
-          font-size: 12px;
-          color: #e6edf5;
-          font-weight: 500;
-        }
-
-        .info-value.highlight {
-          color: #6fcf97;
-          font-weight: 700;
-        }
-
-        .dropdown-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .dropdown-label {
+        .form-label {
+          display: block;
           font-size: 11px;
           font-weight: 700;
           color: #8e9bae;
+          margin-bottom: 8px;
           letter-spacing: 1px;
         }
 
-        .dropdown-select {
-          padding: 10px 12px;
-          background: #0c111a;
+        .form-input,
+        .form-select {
+          width: 100%;
+          padding: 12px;
+          background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 8px;
           color: #e6edf5;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
+          font-size: 13px;
           transition: all 0.2s;
         }
 
-        .dropdown-select:hover {
-          border-color: #6c9bd2;
-        }
-
-        .dropdown-select:focus {
+        .form-input:focus,
+        .form-select:focus {
           outline: none;
           border-color: #6c9bd2;
           box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
         }
 
-        .quick-options {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
         .supply-buttons {
           display: flex;
-          gap: 8px;
+          gap: 10px;
         }
 
         .supply-btn {
           flex: 1;
-          padding: 8px;
-          background: #0c111a;
+          padding: 10px;
+          background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 6px;
           color: #8e9bae;
@@ -604,7 +525,8 @@ const DeployTokenPage: React.FC = () => {
           background: rgba(108, 155, 210, 0.05);
           border: 1px solid #232a36;
           border-radius: 10px;
-          padding: 12px;
+          padding: 15px;
+          margin-bottom: 20px;
           text-align: center;
         }
 
@@ -612,7 +534,6 @@ const DeployTokenPage: React.FC = () => {
           font-size: 11px;
           color: #8e9bae;
           line-height: 1.8;
-          letter-spacing: 0.5px;
         }
 
         .info-text strong {
@@ -620,27 +541,27 @@ const DeployTokenPage: React.FC = () => {
           font-size: 12px;
         }
 
-        .action-button {
+        .action-btn {
           width: 100%;
-          padding: 12px;
+          padding: 14px;
           border: none;
           border-radius: 8px;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
           letter-spacing: 1px;
+          margin-bottom: 12px;
         }
 
-        .initialize-btn {
+        .init-btn {
           background: rgba(108, 155, 210, 0.1);
           border: 1px solid #6c9bd2;
           color: #6c9bd2;
         }
 
-        .initialize-btn:hover {
+        .init-btn:hover {
           background: rgba(108, 155, 210, 0.2);
-          transform: translateY(-1px);
         }
 
         .deploy-btn {
@@ -660,79 +581,85 @@ const DeployTokenPage: React.FC = () => {
 
         .warning-text {
           text-align: center;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 600;
           color: #f39c12;
-          letter-spacing: 0.5px;
+          margin-top: 10px;
         }
 
-        .form-field {
-          margin-bottom: 16px;
+        .info-section {
+          background: #0c111a;
+          border-radius: 12px;
+          border: 1px solid #1e2a3a;
+          margin-bottom: 20px;
+          overflow: hidden;
         }
 
-        .form-field:last-child {
-          margin-bottom: 0;
-        }
-
-        .field-label {
-          display: block;
-          font-size: 10px;
+        .info-section-header {
+          padding: 14px 20px;
+          background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
+          border-bottom: 1px solid #1e2a3a;
+          font-size: 13px;
           font-weight: 700;
-          color: #8e9bae;
-          margin-bottom: 8px;
+          color: #6c9bd2;
           letter-spacing: 1px;
         }
 
-        .field-input {
-          width: 100%;
-          padding: 10px 12px;
-          background: #0a0e15;
-          border: 1px solid #232a36;
-          border-radius: 8px;
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 20px;
+          border-bottom: 1px solid #1e2a3a;
+        }
+
+        .info-row:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          font-size: 12px;
+          color: #8e9bae;
+          font-weight: 600;
+        }
+
+        .info-value {
+          font-size: 12px;
           color: #e6edf5;
-          font-size: 13px;
           font-weight: 500;
-          transition: all 0.2s;
         }
 
-        .field-input:focus {
-          outline: none;
-          border-color: #6c9bd2;
-          box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
+        .info-value.highlight {
+          color: #6fcf97;
+          font-weight: 700;
         }
 
-        .form-row-two {
+        .form-row {
           display: flex;
-          gap: 12px;
+          gap: 15px;
+          padding: 0 20px 20px 20px;
         }
 
-        .form-field.half {
+        .form-group.half {
           flex: 1;
+          margin-bottom: 0;
         }
 
-        /* Logo Upload Styles */
-        .logo-upload-section {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .logo-upload-container {
-          width: 100%;
+        .logo-container {
+          margin-top: 5px;
         }
 
         .logo-preview {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 10px;
-          padding: 16px;
+          gap: 12px;
+          padding: 20px;
           background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 12px;
         }
 
-        .logo-preview-img {
+        .logo-img {
           width: 100px;
           height: 100px;
           object-fit: cover;
@@ -740,25 +667,24 @@ const DeployTokenPage: React.FC = () => {
           border: 2px solid #6c9bd2;
         }
 
-        .remove-logo-btn {
+        .remove-logo {
           padding: 6px 12px;
           background: rgba(220, 38, 38, 0.2);
           border: 1px solid #dc2626;
           border-radius: 6px;
           color: #dc2626;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 700;
           cursor: pointer;
-          transition: all 0.2s;
           letter-spacing: 1px;
         }
 
-        .remove-logo-btn:hover {
+        .remove-logo:hover {
           background: rgba(220, 38, 38, 0.4);
         }
 
-        .logo-upload-area {
-          padding: 20px;
+        .logo-upload {
+          padding: 30px;
           background: #0a0e15;
           border: 2px dashed #232a36;
           border-radius: 12px;
@@ -766,7 +692,7 @@ const DeployTokenPage: React.FC = () => {
           transition: all 0.2s;
         }
 
-        .logo-upload-area:hover {
+        .logo-upload:hover {
           border-color: #6c9bd2;
         }
 
@@ -780,32 +706,37 @@ const DeployTokenPage: React.FC = () => {
         }
 
         .upload-placeholder {
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 600;
           color: #8e9bae;
           letter-spacing: 1px;
           padding: 20px;
         }
 
+        .recent-card {
+          background: #0c111a;
+          border-radius: 12px;
+          border: 1px solid #1e2a3a;
+          margin-top: 20px;
+          overflow: hidden;
+        }
+
         .recent-header {
           padding: 14px 20px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
           border-bottom: 1px solid #1e2a3a;
-          text-align: center;
-        }
-
-        .recent-title {
           font-size: 13px;
           font-weight: 700;
           color: #6c9bd2;
+          text-align: center;
           letter-spacing: 1px;
         }
 
         .recent-list {
+          padding: 15px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          padding: 20px;
+          gap: 10px;
         }
 
         .recent-item {
@@ -815,23 +746,18 @@ const DeployTokenPage: React.FC = () => {
           padding: 10px;
           background: #0a0e15;
           border-radius: 8px;
-          transition: all 0.2s;
-        }
-
-        .recent-item:hover {
-          background: #0f1419;
         }
 
         .recent-logo {
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           object-fit: cover;
         }
 
-        .recent-symbol {
-          width: 32px;
-          height: 32px;
+        .recent-logo-placeholder {
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
           display: flex;
@@ -846,67 +772,49 @@ const DeployTokenPage: React.FC = () => {
           flex: 1;
         }
 
-        .recent-details div:first-child {
-          font-size: 11px;
+        .recent-name {
+          font-size: 12px;
           font-weight: 600;
           color: #e6edf5;
           margin-bottom: 4px;
         }
 
         .recent-supply {
-          font-size: 9px;
-          font-weight: 600;
+          font-size: 10px;
           color: #8e9bae;
-          letter-spacing: 0.5px;
-        }
-
-        .left-card::-webkit-scrollbar,
-        .right-card::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .left-card::-webkit-scrollbar-track,
-        .right-card::-webkit-scrollbar-track {
-          background: #0c111a;
-          border-radius: 3px;
-        }
-
-        .left-card::-webkit-scrollbar-thumb,
-        .right-card::-webkit-scrollbar-thumb {
-          background: #232a36;
-          border-radius: 3px;
-        }
-
-        .left-card::-webkit-scrollbar-thumb:hover,
-        .right-card::-webkit-scrollbar-thumb:hover {
-          background: #6c9bd2;
         }
 
         @media (max-width: 1024px) {
-          .deploy-token-two-column-layout {
+          .two-columns-container {
             flex-direction: column;
           }
 
-          .left-card,
-          .right-card {
+          .left-column {
+            border-right: none;
+            border-bottom: 1px solid #232a36;
+          }
+
+          .left-column,
+          .right-column {
             min-height: auto;
           }
         }
 
         @media (max-width: 768px) {
-          .deploy-token-two-column-layout {
-            padding: 12px;
-            gap: 12px;
+          .left-column,
+          .right-column {
+            padding: 20px;
           }
 
-          .form-row-two {
+          .form-row {
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
+            padding: 0 20px 20px 20px;
           }
 
           .info-row {
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
           }
         }
       `}</style>
