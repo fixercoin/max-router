@@ -1,13 +1,7 @@
 name = "max-dex"
-compatibility_date = "2024-01-01"
 
 [build]
 command = "npm run build"
-cwd = "./"
 
-[pages]
-# This tells Wrangler this is a Pages project
-build_output_directory = "build"
-
-[env.production]
-# Pages doesn't use routes like Workers - remove them
+[build.upload]
+dir = "build"
