@@ -160,9 +160,7 @@ const DeployTokenPage: React.FC = () => {
 
   return (
     <div className="deploy-token-full-width">
-      {/* SINGLE CARD */}
       <div className="main-card">
-        {/* TWO COLUMNS INSIDE CARD */}
         <div className="two-columns-container">
           
           {/* LEFT COLUMN - DEPLOYMENT SETTINGS */}
@@ -345,28 +343,28 @@ const DeployTokenPage: React.FC = () => {
 
             <div className="info-section">
               <div className="info-section-header">TOKEN DETAILS</div>
-              <div className="form-group">
-                <label className="form-label">TOKEN NAME</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={tokenName}
-                  onChange={(e) => setTokenName(e.target.value.toUpperCase())}
-                  placeholder="MAX TOKEN"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">SYMBOL</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={tokenSymbol}
-                  onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
-                  placeholder="MAX"
-                />
-              </div>
-              <div className="form-row">
-                <div className="form-group half">
+              <div className="token-details-grid">
+                <div className="form-group">
+                  <label className="form-label">TOKEN NAME</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value.toUpperCase())}
+                    placeholder="MAX TOKEN"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">SYMBOL</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={tokenSymbol}
+                    onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
+                    placeholder="MAX"
+                  />
+                </div>
+                <div className="form-group">
                   <label className="form-label">DECIMALS</label>
                   <input
                     type="number"
@@ -377,7 +375,7 @@ const DeployTokenPage: React.FC = () => {
                     max="9"
                   />
                 </div>
-                <div className="form-group half">
+                <div className="form-group">
                   <label className="form-label">TOTAL SUPPLY</label>
                   <input
                     type="number"
@@ -633,14 +631,15 @@ const DeployTokenPage: React.FC = () => {
           font-weight: 700;
         }
 
-        .form-row {
-          display: flex;
-          gap: 15px;
-          padding: 0 20px 20px 20px;
+        /* Token Details Grid - 2 columns, 2 rows */
+        .token-details-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          padding: 20px;
         }
 
-        .form-group.half {
-          flex: 1;
+        .token-details-grid .form-group {
           margin-bottom: 0;
         }
 
@@ -806,10 +805,9 @@ const DeployTokenPage: React.FC = () => {
             padding: 20px;
           }
 
-          .form-row {
-            flex-direction: column;
-            gap: 20px;
-            padding: 0 20px 20px 20px;
+          .token-details-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
           }
 
           .info-row {
