@@ -17,16 +17,38 @@ const LiquidityPoolsPage: React.FC = () => {
   const [swapStatus, setSwapStatus] = useState('');
 
   const loadPoolsFromChain = useCallback(async () => {
-    if (!dexClient) return;
+    if (!dexClient || pools.length === 0) return;
 
     try {
-      const dexState = await dexClient.getDexState();
-      // Fetch all pools (you'd need to track pool addresses)
-      console.log("DEX State:", dexState);
+      const updatedPools = [];
+      for (const pool of pools) {
+        try {
+          const poolPubkey = new PublicKey(pool.poolAddress);
+          const poolData = await dexClient.fetchPoolReserves(poolPubkey);
+          if (poolData) {
+            updatedPools.push({
+              ...pool,
+              reserveA: poolData.reserveA?.toNumber?.() || poolData.reserveA || 0,
+              reserveB: poolData.reserveB?.toNumber?.() || poolData.reserveB || 0,
+              totalLp: poolData.lpSupply?.toNumber?.() || poolData.lpSupply || 0,
+              totalVolume: poolData.totalVolume?.toNumber?.() || 0,
+            });
+          } else {
+            updatedPools.push(pool);
+          }
+        } catch (e) {
+          console.error(`Failed to fetch pool ${pool.poolAddress}:`, e);
+          updatedPools.push(pool);
+        }
+      }
+      if (updatedPools.length > 0) {
+        setPools(updatedPools);
+        localStorage.setItem('MAX_pools', JSON.stringify(updatedPools));
+      }
     } catch (e) {
       console.error("Failed to load pools:", e);
     }
-  }, [dexClient]);
+  }, [dexClient, pools, setPools]);
 
   useEffect(() => {
     loadPoolsFromChain();
@@ -79,6 +101,11 @@ const LiquidityPoolsPage: React.FC = () => {
       );
       setTokenAMint('');
       setTokenBMint('');
+
+      // Fetch pool data from chain after creation
+      setTimeout(() => {
+        loadPoolsFromChain();
+      }, 2000);
     } catch (e: any) {
       setPoolStatus(`❌ Pool creation failed: ${e.message}`);
     }

@@ -242,10 +242,43 @@ const DeployTokenPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Column - Form Cards */}
+      {/* Right Column - Form Cards + Preview */}
       <div className="right-column">
         <div className="cards-container">
-          <h3 className="column-title">📝 Token Configuration</h3>
+          <h3 className="column-title">📋 Token Preview</h3>
+
+          {/* Token Card Preview */}
+          <div className="token-preview-card">
+            <div className="token-preview-header">
+              <div className="token-avatar">
+                {tokenSymbol.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="token-preview-title">
+                <div className="token-name">{tokenName}</div>
+                <div className="token-sym">{tokenSymbol}</div>
+              </div>
+            </div>
+            <div className="token-preview-content">
+              <div className="preview-stat">
+                <span className="preview-stat-label">TOTAL SUPPLY</span>
+                <span className="preview-stat-value">{tokenSupply.toLocaleString()}</span>
+              </div>
+              <div className="preview-stat">
+                <span className="preview-stat-label">DECIMALS</span>
+                <span className="preview-stat-value">{tokenDecimals}</span>
+              </div>
+              <div className="preview-stat">
+                <span className="preview-stat-label">NETWORK</span>
+                <span className="preview-stat-value">{selectedNetwork.toUpperCase()}</span>
+              </div>
+              <div className="preview-stat">
+                <span className="preview-stat-label">STANDARD</span>
+                <span className="preview-stat-value">{selectedTokenStandard.toUpperCase()}</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 className="column-title" style={{ marginTop: '20px' }}>📝 Token Configuration</h3>
           
           {/* Token Details Card */}
           <div className="config-card">
@@ -806,6 +839,108 @@ const DeployTokenPage: React.FC = () => {
           }
         }
 
+        /* Token Preview Card */
+        .token-preview-card {
+          background: linear-gradient(135deg, #1e2a3a 0%, #0c111a 100%);
+          border: 1px solid #232a36;
+          border-radius: 12px;
+          overflow: hidden;
+          transition: all 0.2s;
+        }
+
+        .token-preview-card:hover {
+          transform: translateY(-2px);
+          border-color: #6c9bd2;
+          box-shadow: 0 4px 12px rgba(108, 155, 210, 0.2);
+        }
+
+        .token-preview-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 20px;
+          background: linear-gradient(135deg, rgba(108, 155, 210, 0.1) 0%, transparent 100%);
+          border-bottom: 1px solid #1e2a3a;
+        }
+
+        .token-avatar {
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          font-weight: 700;
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .token-preview-title {
+          flex: 1;
+        }
+
+        .token-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: #e6edf5;
+          margin-bottom: 4px;
+        }
+
+        .token-sym {
+          font-size: 12px;
+          color: #8e9bae;
+          text-transform: uppercase;
+          font-weight: 500;
+        }
+
+        .token-preview-content {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .preview-stat {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px;
+          background: #0a0e15;
+          border-radius: 8px;
+          border: 1px solid #1e2a3a;
+        }
+
+        .preview-stat-label {
+          font-size: 10px;
+          text-transform: uppercase;
+          color: #8e9bae;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+
+        .preview-stat-value {
+          font-size: 12px;
+          color: #6c9bd2;
+          font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+          .deploy-token-two-column-layout {
+            flex-direction: column;
+          }
+
+          .left-column {
+            flex: none;
+            max-height: 400px;
+          }
+
+          .right-column {
+            flex: none;
+          }
+        }
+
         @media (max-width: 768px) {
           .deploy-token-two-column-layout {
             padding: 12px;
@@ -820,6 +955,21 @@ const DeployTokenPage: React.FC = () => {
           .summary-row {
             flex-direction: column;
             gap: 4px;
+          }
+
+          .token-preview-header {
+            gap: 12px;
+            padding: 16px;
+          }
+
+          .token-avatar {
+            width: 48px;
+            height: 48px;
+            font-size: 18px;
+          }
+
+          .token-name {
+            font-size: 13px;
           }
         }
       `}</style>

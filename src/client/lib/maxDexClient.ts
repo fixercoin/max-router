@@ -11,11 +11,37 @@ export class MaxDexClient {
   provider: anchor.AnchorProvider;
   dexState: PublicKey | null = null;
   private lastTx: string = '';
+  private connection: Connection;
 
   constructor(connection: Connection, wallet: any) {
-    this.provider = new anchor.AnchorProvider(connection, wallet, {});
+    this.connection = connection;
+
+    // Handle wallet object with provider property
+    const walletForProvider = wallet.provider || wallet;
+
+    // Ensure wallet has required signing methods
+    if (!walletForProvider.signTransaction) {
+      console.warn('Wallet missing signTransaction method - transactions may fail');
+    }
+
+    this.provider = new anchor.AnchorProvider(connection, walletForProvider, {
+      commitment: 'confirmed'
+    });
     anchor.setProvider(this.provider);
     this.program = new Program(idl as any, DEX_PROGRAM_ID, this.provider);
+  }
+
+  getConnection(): Connection {
+    return this.connection;
+  }
+
+  private async confirmTx(txHash: string): Promise<void> {
+    try {
+      await this.connection.confirmTransaction(txHash, 'confirmed');
+    } catch (e) {
+      console.warn('Transaction confirmation timeout, but may still succeed:', txHash);
+      // Don't throw - transaction may still be processing
+    }
   }
 
   async initializeDex(): Promise<string> {
@@ -24,7 +50,7 @@ export class MaxDexClient {
       DEX_PROGRAM_ID
     );
     this.dexState = dexState;
-    
+
     const tx = await this.program.methods
       .initializeDex(this.provider.wallet.publicKey)
       .accounts({
@@ -33,7 +59,14 @@ export class MaxDexClient {
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .rpc();
-    
+
+    // Confirm transaction on devnet
+    try {
+      await this.connection.confirmTransaction(tx, 'confirmed');
+    } catch (e) {
+      console.warn('Transaction confirmation timeout, but may still succeed:', tx);
+    }
+
     this.lastTx = tx;
     return tx;
   }
@@ -46,13 +79,13 @@ export class MaxDexClient {
       );
       this.dexState = address;
     }
-    
+
     const mintKeypair = Keypair.generate();
     const [tokenMetadata] = await PublicKey.findProgramAddress(
       [Buffer.from("token_metadata"), mintKeypair.publicKey.toBuffer()],
       DEX_PROGRAM_ID
     );
-    
+
     const tx = await this.program.methods
       .deployToken(name, symbol, decimals)
       .accounts({
@@ -66,7 +99,14 @@ export class MaxDexClient {
       })
       .signers([mintKeypair])
       .rpc();
-    
+
+    // Confirm transaction on devnet
+    try {
+      await this.connection.confirmTransaction(tx, 'confirmed');
+    } catch (e) {
+      console.warn('Transaction confirmation timeout, but may still succeed:', tx);
+    }
+
     this.lastTx = tx;
     return mintKeypair.publicKey;
   }
@@ -77,7 +117,7 @@ export class MaxDexClient {
       [Buffer.from("token_metadata"), mint.toBuffer()],
       DEX_PROGRAM_ID
     );
-    
+
     const tx = await this.program.methods
       .mintTokens(new anchor.BN(amount))
       .accounts({
@@ -88,7 +128,8 @@ export class MaxDexClient {
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
-    
+
+    await this.confirmTx(tx);
     this.lastTx = tx;
     return tx;
   }
@@ -101,12 +142,12 @@ export class MaxDexClient {
       );
       this.dexState = address;
     }
-    
+
     const [pool] = await PublicKey.findProgramAddress(
       [Buffer.from("pool"), tokenA.toBuffer(), tokenB.toBuffer()],
       DEX_PROGRAM_ID
     );
-    
+
     const [poolAuthority] = await PublicKey.findProgramAddress(
       [Buffer.from("pool_authority"), pool.toBuffer()],
       DEX_PROGRAM_ID
@@ -115,7 +156,7 @@ export class MaxDexClient {
     const lpMintKeypair = Keypair.generate();
     const tokenAVaultKeypair = Keypair.generate();
     const tokenBVaultKeypair = Keypair.generate();
-    
+
     const tx = await this.program.methods
       .createPool(feeBps)
       .accounts({
@@ -134,7 +175,8 @@ export class MaxDexClient {
       })
       .signers([lpMintKeypair, tokenAVaultKeypair, tokenBVaultKeypair])
       .rpc();
-    
+
+    await this.confirmTx(tx);
     this.lastTx = tx;
     return pool;
   }
@@ -169,6 +211,7 @@ export class MaxDexClient {
       } as any)
       .rpc();
 
+    await this.confirmTx(tx);
     this.lastTx = tx;
     return tx;
   }
@@ -197,6 +240,7 @@ export class MaxDexClient {
       } as any)
       .rpc();
 
+    await this.confirmTx(tx);
     this.lastTx = tx;
     return tx;
   }
@@ -239,6 +283,7 @@ export class MaxDexClient {
       } as any)
       .rpc();
 
+    await this.confirmTx(tx);
     this.lastTx = tx;
     return tx;
   }
@@ -285,6 +330,40 @@ export class MaxDexClient {
       DEX_PROGRAM_ID
     );
     return address;
+  }
+
+  async fetchPoolReserves(pool: PublicKey): Promise<any> {
+    try {
+      const poolAccount = await this.program.account.poolAccount.fetch(pool);
+      return poolAccount;
+    } catch (e) {
+      console.error("Failed to fetch pool reserves:", e);
+      return null;
+    }
+  }
+
+  async fetchAllPoolsByTokens(tokenMints: PublicKey[]): Promise<any[]> {
+    const pools = [];
+    for (let i = 0; i < tokenMints.length; i++) {
+      for (let j = i + 1; j < tokenMints.length; j++) {
+        try {
+          const poolAddress = await this.getPoolAddress(tokenMints[i], tokenMints[j]);
+          const poolData = await this.program.account.poolAccount.fetch(poolAddress);
+          pools.push({
+            poolAddress: poolAddress.toString(),
+            tokenA: tokenMints[i].toString(),
+            tokenB: tokenMints[j].toString(),
+            reserveA: poolData.reserveA?.toNumber?.() || 0,
+            reserveB: poolData.reserveB?.toNumber?.() || 0,
+            totalLp: poolData.lpSupply?.toNumber?.() || 0,
+            fee: poolData.feeBps || 0,
+          });
+        } catch (e) {
+          // Pool doesn't exist yet
+        }
+      }
+    }
+    return pools;
   }
 
   getLastTransaction(): string {
