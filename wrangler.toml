@@ -7,7 +7,7 @@ cwd = "./"
 
 [pages]
 # This tells Wrangler this is a Pages project
-build_output_directory = "public"
+build_output_directory = "build"
 
 [env.production]
 # Pages doesn't use routes like Workers - remove them
