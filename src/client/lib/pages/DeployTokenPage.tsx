@@ -9,7 +9,7 @@ const DeployTokenPage: React.FC = () => {
   const [tokenSymbol, setTokenSymbol] = useState('MAX');
   const [tokenDecimals, setTokenDecimals] = useState(6);
   const [tokenSupply, setTokenSupply] = useState(100000000);
-  const [status, setStatus] = useState('⚡ Ready — Solana Devnet');
+  const [status, setStatus] = useState('Ready Solana Devnet');
   
   // Dropdown states for preset configurations
   const [selectedPreset, setSelectedPreset] = useState<string>('custom');
@@ -43,7 +43,7 @@ const DeployTokenPage: React.FC = () => {
       return false;
     }
 
-    setStatus('⏳ Initializing DEX...');
+    setStatus('Initializing DEX...');
 
     try {
       const connection = new Connection(selectedNetwork === 'devnet' 
@@ -54,14 +54,14 @@ const DeployTokenPage: React.FC = () => {
       
       await client.initializeDex();
       setDexClient(client);
-      setStatus('✅ DEX Initialized! Ready to deploy token.');
+      setStatus('DEX Initialized Ready to deploy token');
       return true;
     } catch (e: any) {
       if (e.message.includes('already in use')) {
-        setStatus('✅ DEX already initialized. Ready to deploy token.');
+        setStatus('DEX already initialized Ready to deploy token');
         return true;
       }
-      setStatus(`❌ DEX Init failed: ${e.message}`);
+      setStatus(`DEX Init failed ${e.message}`);
       return false;
     }
   };
@@ -72,7 +72,7 @@ const DeployTokenPage: React.FC = () => {
       return;
     }
 
-    setStatus('⏳ Preparing token deployment...');
+    setStatus('Preparing token deployment...');
 
     try {
       let client = dexClient;
@@ -85,11 +85,11 @@ const DeployTokenPage: React.FC = () => {
         setDexClient(client);
       }
 
-      setStatus('⏳ Deploying token via MAX DEX program...');
+      setStatus('Deploying token via MAX DEX program...');
       const mintAddress = await client.deployToken(tokenName, tokenSymbol, tokenDecimals);
       
       const initialSupply = tokenSupply * Math.pow(10, tokenDecimals);
-      setStatus('⏳ Minting initial supply...');
+      setStatus('Minting initial supply...');
       await client.mintTokens(mintAddress, initialSupply);
 
       const metadataAddress = await client.getTokenMetadataAddress(mintAddress);
@@ -113,12 +113,12 @@ const DeployTokenPage: React.FC = () => {
       localStorage.setItem('MAX_deployed', JSON.stringify(newTokens));
 
       setStatus(
-        `✅ Token deployed via MAX DEX!<br>` +
-        `📄 Mint: ${mintAddress.toString()}<br>` +
-        `📋 Metadata: ${metadataAddress.toString()}<br>` +
-        `💰 Supply: ${tokenSupply.toLocaleString()} ${tokenSymbol}<br>` +
-        `🌐 Network: ${selectedNetwork.toUpperCase()}<br>` +
-        `🔗 <a href="https://explorer.solana.com/address/${mintAddress.toString()}?cluster=${selectedNetwork}" target="_blank" style="color:#6C9BD2">View Token on Explorer</a>`
+        `Token deployed via MAX DEX\n` +
+        `Mint: ${mintAddress.toString()}\n` +
+        `Metadata: ${metadataAddress.toString()}\n` +
+        `Supply: ${tokenSupply.toLocaleString()} ${tokenSymbol}\n` +
+        `Network: ${selectedNetwork.toUpperCase()}\n` +
+        `View Token on Explorer: https://explorer.solana.com/address/${mintAddress.toString()}?cluster=${selectedNetwork}`
       );
       
       setTokenName('MAX Token');
@@ -128,7 +128,7 @@ const DeployTokenPage: React.FC = () => {
       setSelectedPreset('custom');
       
     } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+      setStatus(`${e.message}`);
       console.error('Deployment error:', e);
     }
   };
@@ -148,19 +148,56 @@ const DeployTokenPage: React.FC = () => {
   };
 
   return (
-    <div className="deploy-token-two-column-layout">
-      {/* Left Column - Dropdowns */}
-      <div className="left-column">
+    <div className="deploy-token-single-column-layout">
+      <div className="main-container">
         <div className="dropdowns-container">
-          <h3 className="column-title">⚙️ Deployment Settings</h3>
+          <h3 className="column-title">Deployment Settings</h3>
           
           {/* Status Card */}
           <div className="status-card">
             <div className="status-header">
-              <span className="status-icon">📡</span>
               <span className="status-title">Connection Status</span>
             </div>
-            <div className="status-content" dangerouslySetInnerHTML={{ __html: status }} />
+            <div className="status-content">
+              <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{status}</pre>
+            </div>
+          </div>
+
+          {/* Token Information Card */}
+          <div className="token-info-card">
+            <div className="card-header">
+              <span className="card-title">Token Information</span>
+            </div>
+            <div className="card-content">
+              <div className="info-row">
+                <span className="info-label">Token Name</span>
+                <span className="info-value">{tokenName}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Token Symbol</span>
+                <span className="info-value">{tokenSymbol}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Decimals</span>
+                <span className="info-value">{tokenDecimals}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Total Supply</span>
+                <span className="info-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Network</span>
+                <span className="info-value">{selectedNetwork.toUpperCase()}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Token Standard</span>
+                <span className="info-value">{selectedTokenStandard.toUpperCase()}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-label">Estimated Cost</span>
+                <span className="info-value">0.05 SOL</span>
+              </div>
+            </div>
           </div>
 
           {/* Dropdown 1 */}
@@ -171,10 +208,10 @@ const DeployTokenPage: React.FC = () => {
               value={selectedPreset}
               onChange={(e) => handlePresetChange(e.target.value)}
             >
-              <option value="custom">🎨 Custom Token</option>
-              <option value="meme">🐸 Meme Token</option>
-              <option value="utility">⚡ Utility Token</option>
-              <option value="governance">🏛️ Governance Token</option>
+              <option value="custom">Custom Token</option>
+              <option value="meme">Meme Token</option>
+              <option value="utility">Utility Token</option>
+              <option value="governance">Governance Token</option>
             </select>
           </div>
 
@@ -186,8 +223,8 @@ const DeployTokenPage: React.FC = () => {
               value={selectedNetwork}
               onChange={(e) => setSelectedNetwork(e.target.value)}
             >
-              <option value="devnet">🌐 Devnet (Test)</option>
-              <option value="mainnet-beta">🚀 Mainnet (Production)</option>
+              <option value="devnet">Devnet Test</option>
+              <option value="mainnet-beta">Mainnet Production</option>
             </select>
           </div>
 
@@ -199,8 +236,8 @@ const DeployTokenPage: React.FC = () => {
               value={selectedTokenStandard}
               onChange={(e) => setSelectedTokenStandard(e.target.value)}
             >
-              <option value="spl">🪙 SPL Token</option>
-              <option value="spl2022">✨ SPL Token 2022</option>
+              <option value="spl">SPL Token</option>
+              <option value="spl2022">SPL Token 2022</option>
             </select>
           </div>
 
@@ -212,9 +249,9 @@ const DeployTokenPage: React.FC = () => {
               value={selectedMintAuthority}
               onChange={(e) => setSelectedMintAuthority(e.target.value)}
             >
-              <option value="wallet">👛 Current Wallet</option>
-              <option value="multisig">🔐 Multi-sig (Coming Soon)</option>
-              <option value="timelock">⏰ Time-lock (Coming Soon)</option>
+              <option value="wallet">Current Wallet</option>
+              <option value="multisig">Multi-sig Coming Soon</option>
+              <option value="timelock">Time-lock Coming Soon</option>
             </select>
           </div>
 
@@ -228,63 +265,10 @@ const DeployTokenPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Info Card */}
-          <div className="info-card-left">
-            <div className="info-icon">ℹ️</div>
-            <div className="info-text">
-              <strong>Deployment Info</strong><br />
-              • Fee: ~0.05 SOL<br />
-              • Time: ~30 seconds<br />
-              • Includes metadata<br />
-              • Verified by MAX DEX
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Column - Form Cards + Preview */}
-      <div className="right-column">
-        <div className="cards-container">
-          <h3 className="column-title">📋 Token Preview</h3>
-
-          {/* Token Card Preview */}
-          <div className="token-preview-card">
-            <div className="token-preview-header">
-              <div className="token-avatar">
-                {tokenSymbol.substring(0, 2).toUpperCase()}
-              </div>
-              <div className="token-preview-title">
-                <div className="token-name">{tokenName}</div>
-                <div className="token-sym">{tokenSymbol}</div>
-              </div>
-            </div>
-            <div className="token-preview-content">
-              <div className="preview-stat">
-                <span className="preview-stat-label">TOTAL SUPPLY</span>
-                <span className="preview-stat-value">{tokenSupply.toLocaleString()}</span>
-              </div>
-              <div className="preview-stat">
-                <span className="preview-stat-label">DECIMALS</span>
-                <span className="preview-stat-value">{tokenDecimals}</span>
-              </div>
-              <div className="preview-stat">
-                <span className="preview-stat-label">NETWORK</span>
-                <span className="preview-stat-value">{selectedNetwork.toUpperCase()}</span>
-              </div>
-              <div className="preview-stat">
-                <span className="preview-stat-label">STANDARD</span>
-                <span className="preview-stat-value">{selectedTokenStandard.toUpperCase()}</span>
-              </div>
-            </div>
-          </div>
-
-          <h3 className="column-title" style={{ marginTop: '20px' }}>📝 Token Configuration</h3>
-          
           {/* Token Details Card */}
           <div className="config-card">
-            <div className="card-header-right">
-              <span className="card-icon">🪙</span>
-              <span className="card-title">Token Details</span>
+            <div className="card-header">
+              <span className="card-title">Token Configuration</span>
             </div>
             <div className="card-content">
               <div className="form-field">
@@ -333,54 +317,26 @@ const DeployTokenPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Configuration Summary Card */}
-          <div className="config-card">
-            <div className="card-header-right">
-              <span className="card-icon">📊</span>
-              <span className="card-title">Configuration Summary</span>
-            </div>
-            <div className="card-content">
-              <div className="summary-row">
-                <span className="summary-label">Token Name:</span>
-                <span className="summary-value">{tokenName}</span>
-              </div>
-              <div className="summary-row">
-                <span className="summary-label">Symbol:</span>
-                <span className="summary-value">{tokenSymbol}</span>
-              </div>
-              <div className="summary-row">
-                <span className="summary-label">Decimals:</span>
-                <span className="summary-value">{tokenDecimals}</span>
-              </div>
-              <div className="summary-row">
-                <span className="summary-label">Total Supply:</span>
-                <span className="summary-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
-              </div>
-              <div className="summary-row">
-                <span className="summary-label">Network:</span>
-                <span className="summary-value">{selectedNetwork.toUpperCase()}</span>
-              </div>
-              <div className="summary-row">
-                <span className="summary-label">Standard:</span>
-                <span className="summary-value">{selectedTokenStandard.toUpperCase()}</span>
-              </div>
-              <div className="summary-row">
-                <span className="summary-label">Estimated Cost:</span>
-                <span className="summary-value">~0.05 SOL</span>
-              </div>
+          {/* Info Card */}
+          <div className="info-card-left">
+            <div className="info-text">
+              <strong>Deployment Info</strong><br />
+              Fee: 0.05 SOL<br />
+              Time: 30 seconds<br />
+              Includes metadata<br />
+              Verified by MAX DEX
             </div>
           </div>
 
           {/* Actions Card */}
           <div className="config-card">
-            <div className="card-header-right">
-              <span className="card-icon">⚡</span>
+            <div className="card-header">
               <span className="card-title">Deployment Actions</span>
             </div>
             <div className="card-content">
               {!dexClient && (
                 <button className="action-button initialize-btn" onClick={initializeDex}>
-                  🔧 INITIALIZE DEX FIRST
+                  INITIALIZE DEX FIRST
                 </button>
               )}
               <button 
@@ -388,10 +344,10 @@ const DeployTokenPage: React.FC = () => {
                 onClick={handleDeployToken}
                 disabled={!dexClient && !status.includes('already initialized')}
               >
-                🚀 DEPLOY TOKEN ON MAX DEX
+                DEPLOY TOKEN ON MAX DEX
               </button>
               <div className="warning-text">
-                ⚠️ Make sure you have enough SOL for deployment fees
+                Make sure you have enough SOL for deployment fees
               </div>
             </div>
           </div>
@@ -399,8 +355,7 @@ const DeployTokenPage: React.FC = () => {
           {/* Recent Deployments Card (if any) */}
           {deployedTokens.length > 0 && (
             <div className="config-card">
-              <div className="card-header-right">
-                <span className="card-icon">📜</span>
+              <div className="card-header">
                 <span className="card-title">Recent Deployments</span>
               </div>
               <div className="card-content">
@@ -422,9 +377,7 @@ const DeployTokenPage: React.FC = () => {
       </div>
 
       <style>{`
-        .deploy-token-two-column-layout {
-          display: flex;
-          gap: 20px;
+        .deploy-token-single-column-layout {
           width: 100%;
           height: 100%;
           min-height: 600px;
@@ -433,9 +386,9 @@ const DeployTokenPage: React.FC = () => {
           border-radius: 16px;
         }
 
-        /* Left Column */
-        .left-column {
-          flex: 0 0 320px;
+        .main-container {
+          max-width: 600px;
+          margin: 0 auto;
           background: rgba(12, 17, 26, 0.8);
           border-radius: 12px;
           border: 1px solid #232a36;
@@ -476,10 +429,6 @@ const DeployTokenPage: React.FC = () => {
           border-bottom: 1px solid #1e2a3a;
         }
 
-        .status-icon {
-          font-size: 18px;
-        }
-
         .status-title {
           font-size: 12px;
           font-weight: 600;
@@ -492,6 +441,60 @@ const DeployTokenPage: React.FC = () => {
           font-size: 12px;
           color: #e6edf5;
           line-height: 1.5;
+        }
+
+        /* Token Info Card */
+        .token-info-card {
+          background: #0c111a;
+          border-radius: 12px;
+          border: 1px solid #1e2a3a;
+          overflow: hidden;
+        }
+
+        .card-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
+          border-bottom: 1px solid #1e2a3a;
+        }
+
+        .card-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: #6c9bd2;
+        }
+
+        .card-content {
+          padding: 20px;
+        }
+
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #1e2a3a;
+        }
+
+        .info-row:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          font-size: 12px;
+          color: #8e9bae;
+        }
+
+        .info-value {
+          font-size: 13px;
+          color: #e6edf5;
+          font-weight: 500;
+        }
+
+        .info-value.highlight {
+          color: #6fcf97;
+          font-weight: 700;
         }
 
         /* Dropdown Styles */
@@ -559,47 +562,6 @@ const DeployTokenPage: React.FC = () => {
           color: #6c9bd2;
         }
 
-        /* Info Card */
-        .info-card-left {
-          background: rgba(108, 155, 210, 0.05);
-          border: 1px solid #232a36;
-          border-radius: 10px;
-          padding: 12px;
-          display: flex;
-          gap: 12px;
-        }
-
-        .info-icon {
-          font-size: 20px;
-        }
-
-        .info-text {
-          font-size: 11px;
-          color: #8e9bae;
-          line-height: 1.6;
-        }
-
-        .info-text strong {
-          color: #6c9bd2;
-        }
-
-        /* Right Column */
-        .right-column {
-          flex: 1;
-          background: rgba(12, 17, 26, 0.8);
-          border-radius: 12px;
-          border: 1px solid #232a36;
-          overflow-y: auto;
-          backdrop-filter: blur(10px);
-        }
-
-        .cards-container {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
         /* Config Cards */
         .config-card {
           background: #0c111a;
@@ -613,29 +575,6 @@ const DeployTokenPage: React.FC = () => {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
           border-color: #6c9bd2;
-        }
-
-        .card-header-right {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 16px 20px;
-          background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
-          border-bottom: 1px solid #1e2a3a;
-        }
-
-        .card-icon {
-          font-size: 18px;
-        }
-
-        .card-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: #6c9bd2;
-        }
-
-        .card-content {
-          padding: 20px;
         }
 
         /* Form Fields */
@@ -683,32 +622,22 @@ const DeployTokenPage: React.FC = () => {
           flex: 1;
         }
 
-        /* Summary Rows */
-        .summary-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          border-bottom: 1px solid #1e2a3a;
+        /* Info Card Left */
+        .info-card-left {
+          background: rgba(108, 155, 210, 0.05);
+          border: 1px solid #232a36;
+          border-radius: 10px;
+          padding: 12px;
         }
 
-        .summary-row:last-child {
-          border-bottom: none;
-        }
-
-        .summary-label {
-          font-size: 12px;
+        .info-text {
+          font-size: 11px;
           color: #8e9bae;
+          line-height: 1.6;
         }
 
-        .summary-value {
-          font-size: 13px;
-          color: #e6edf5;
-          font-weight: 500;
-        }
-
-        .summary-value.highlight {
-          color: #6fcf97;
-          font-weight: 700;
+        .info-text strong {
+          color: #6c9bd2;
         }
 
         /* Action Buttons */
@@ -801,150 +730,28 @@ const DeployTokenPage: React.FC = () => {
         }
 
         /* Scrollbar */
-        .left-column::-webkit-scrollbar,
-        .right-column::-webkit-scrollbar {
+        .main-container::-webkit-scrollbar {
           width: 6px;
         }
 
-        .left-column::-webkit-scrollbar-track,
-        .right-column::-webkit-scrollbar-track {
+        .main-container::-webkit-scrollbar-track {
           background: #0c111a;
           border-radius: 3px;
         }
 
-        .left-column::-webkit-scrollbar-thumb,
-        .right-column::-webkit-scrollbar-thumb {
+        .main-container::-webkit-scrollbar-thumb {
           background: #232a36;
           border-radius: 3px;
         }
 
-        .left-column::-webkit-scrollbar-thumb:hover,
-        .right-column::-webkit-scrollbar-thumb:hover {
+        .main-container::-webkit-scrollbar-thumb:hover {
           background: #6c9bd2;
         }
 
         /* Responsive */
-        @media (max-width: 1024px) {
-          .deploy-token-two-column-layout {
-            flex-direction: column;
-          }
-
-          .left-column {
-            flex: none;
-            max-height: 400px;
-          }
-
-          .right-column {
-            flex: none;
-          }
-        }
-
-        /* Token Preview Card */
-        .token-preview-card {
-          background: linear-gradient(135deg, #1e2a3a 0%, #0c111a 100%);
-          border: 1px solid #232a36;
-          border-radius: 12px;
-          overflow: hidden;
-          transition: all 0.2s;
-        }
-
-        .token-preview-card:hover {
-          transform: translateY(-2px);
-          border-color: #6c9bd2;
-          box-shadow: 0 4px 12px rgba(108, 155, 210, 0.2);
-        }
-
-        .token-preview-header {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 20px;
-          background: linear-gradient(135deg, rgba(108, 155, 210, 0.1) 0%, transparent 100%);
-          border-bottom: 1px solid #1e2a3a;
-        }
-
-        .token-avatar {
-          width: 56px;
-          height: 56px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          font-weight: 700;
-          color: white;
-          flex-shrink: 0;
-        }
-
-        .token-preview-title {
-          flex: 1;
-        }
-
-        .token-name {
-          font-size: 14px;
-          font-weight: 600;
-          color: #e6edf5;
-          margin-bottom: 4px;
-        }
-
-        .token-sym {
-          font-size: 12px;
-          color: #8e9bae;
-          text-transform: uppercase;
-          font-weight: 500;
-        }
-
-        .token-preview-content {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .preview-stat {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 10px;
-          background: #0a0e15;
-          border-radius: 8px;
-          border: 1px solid #1e2a3a;
-        }
-
-        .preview-stat-label {
-          font-size: 10px;
-          text-transform: uppercase;
-          color: #8e9bae;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-        }
-
-        .preview-stat-value {
-          font-size: 12px;
-          color: #6c9bd2;
-          font-weight: 600;
-        }
-
-        @media (max-width: 1024px) {
-          .deploy-token-two-column-layout {
-            flex-direction: column;
-          }
-
-          .left-column {
-            flex: none;
-            max-height: 400px;
-          }
-
-          .right-column {
-            flex: none;
-          }
-        }
-
         @media (max-width: 768px) {
-          .deploy-token-two-column-layout {
+          .deploy-token-single-column-layout {
             padding: 12px;
-            gap: 12px;
           }
 
           .form-row-two {
@@ -952,24 +759,9 @@ const DeployTokenPage: React.FC = () => {
             gap: 16px;
           }
 
-          .summary-row {
+          .info-row {
             flex-direction: column;
             gap: 4px;
-          }
-
-          .token-preview-header {
-            gap: 12px;
-            padding: 16px;
-          }
-
-          .token-avatar {
-            width: 48px;
-            height: 48px;
-            font-size: 18px;
-          }
-
-          .token-name {
-            font-size: 13px;
           }
         }
       `}</style>
