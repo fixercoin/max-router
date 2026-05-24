@@ -9,6 +9,7 @@ const DeployTokenPage: React.FC = () => {
   const [tokenSymbol, setTokenSymbol] = useState('MAX');
   const [tokenDecimals, setTokenDecimals] = useState(6);
   const [tokenSupply, setTokenSupply] = useState(100000000);
+  const [tokenLogo, setTokenLogo] = useState<string | null>(null);
   const [status, setStatus] = useState('READY SOLANA DEVNET');
   
   const [selectedPreset, setSelectedPreset] = useState<string>('custom');
@@ -31,6 +32,17 @@ const DeployTokenPage: React.FC = () => {
       setTokenSymbol(config.symbol);
       setTokenSupply(config.supply);
       setTokenDecimals(config.decimals);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTokenLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -104,6 +116,7 @@ const DeployTokenPage: React.FC = () => {
           metadataAddress: metadataAddress.toString(),
           network: selectedNetwork,
           standard: selectedTokenStandard,
+          logo: tokenLogo,
         },
       ];
       setDeployedTokens(newTokens);
@@ -122,6 +135,7 @@ const DeployTokenPage: React.FC = () => {
       setTokenSymbol('MAX');
       setTokenDecimals(6);
       setTokenSupply(10000000);
+      setTokenLogo(null);
       setSelectedPreset('custom');
       
     } catch (e: any) {
@@ -255,10 +269,15 @@ const DeployTokenPage: React.FC = () => {
             <div className="recent-list">
               {deployedTokens.slice(-3).reverse().map((token, idx) => (
                 <div key={idx} className="recent-item">
-                  <div className="recent-symbol">{token.symbol}</div>
+                  {token.logo && (
+                    <img src={token.logo} alt={token.symbol} className="recent-logo" />
+                  )}
+                  {!token.logo && (
+                    <div className="recent-symbol">{token.symbol?.substring(0, 2)}</div>
+                  )}
                   <div className="recent-details">
                     <div>{token.name}</div>
-                    <div className="recent-supply">{token.totalSupply.toLocaleString()} SUPPLY</div>
+                    <div className="recent-supply">{token.totalSupply?.toLocaleString()} SUPPLY</div>
                   </div>
                 </div>
               ))}
@@ -271,6 +290,38 @@ const DeployTokenPage: React.FC = () => {
       <div className="right-card">
         <div className="card-title-main">TOKEN CONFIGURATION</div>
         
+        {/* LOGO UPLOAD SECTION */}
+        <div className="logo-upload-section">
+          <label className="dropdown-label">TOKEN LOGO</label>
+          <div className="logo-upload-container">
+            {tokenLogo ? (
+              <div className="logo-preview">
+                <img src={tokenLogo} alt="TOKEN LOGO" className="logo-preview-img" />
+                <button 
+                  className="remove-logo-btn"
+                  onClick={() => setTokenLogo(null)}
+                >
+                  REMOVE
+                </button>
+              </div>
+            ) : (
+              <div className="logo-upload-area">
+                <label className="upload-label">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="logo-input"
+                  />
+                  <div className="upload-placeholder">
+                    CLICK TO UPLOAD LOGO
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="token-info-card">
           <div className="card-header">
             <span className="card-title">TOKEN INFORMATION</span>
@@ -659,6 +710,83 @@ const DeployTokenPage: React.FC = () => {
           flex: 1;
         }
 
+        /* Logo Upload Styles */
+        .logo-upload-section {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .logo-upload-container {
+          width: 100%;
+        }
+
+        .logo-preview {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          padding: 16px;
+          background: #0a0e15;
+          border: 1px solid #232a36;
+          border-radius: 12px;
+        }
+
+        .logo-preview-img {
+          width: 100px;
+          height: 100px;
+          object-fit: cover;
+          border-radius: 50%;
+          border: 2px solid #6c9bd2;
+        }
+
+        .remove-logo-btn {
+          padding: 6px 12px;
+          background: rgba(220, 38, 38, 0.2);
+          border: 1px solid #dc2626;
+          border-radius: 6px;
+          color: #dc2626;
+          font-size: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          letter-spacing: 1px;
+        }
+
+        .remove-logo-btn:hover {
+          background: rgba(220, 38, 38, 0.4);
+        }
+
+        .logo-upload-area {
+          padding: 20px;
+          background: #0a0e15;
+          border: 2px dashed #232a36;
+          border-radius: 12px;
+          text-align: center;
+          transition: all 0.2s;
+        }
+
+        .logo-upload-area:hover {
+          border-color: #6c9bd2;
+        }
+
+        .upload-label {
+          cursor: pointer;
+          display: block;
+        }
+
+        .logo-input {
+          display: none;
+        }
+
+        .upload-placeholder {
+          font-size: 12px;
+          font-weight: 600;
+          color: #8e9bae;
+          letter-spacing: 1px;
+          padding: 20px;
+        }
+
         .recent-header {
           padding: 14px 20px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
@@ -682,6 +810,7 @@ const DeployTokenPage: React.FC = () => {
 
         .recent-item {
           display: flex;
+          align-items: center;
           gap: 12px;
           padding: 10px;
           background: #0a0e15;
@@ -693,10 +822,24 @@ const DeployTokenPage: React.FC = () => {
           background: #0f1419;
         }
 
+        .recent-logo {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
         .recent-symbol {
-          font-size: 16px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
           font-weight: 700;
-          color: #6c9bd2;
+          color: white;
         }
 
         .recent-details {
