@@ -22,7 +22,7 @@ const SwapRouterPage: React.FC = () => {
     }))
   ];
 
-  // Find pool when tokens are selected
+  // Find pool when tokens are selected and fetch real reserves
   useEffect(() => {
     if (fromToken && toToken) {
       const pool = pools.find(
@@ -30,15 +30,38 @@ const SwapRouterPage: React.FC = () => {
           (p.tokenA === fromToken.mint && p.tokenB === toToken.mint) ||
           (p.tokenA === toToken.mint && p.tokenB === fromToken.mint)
       );
-      setSelectedPool(pool || null);
-      
-      if (!pool) {
-        setEstimatedOutput('❌ No liquidity pool found for this pair');
+
+      if (pool && dexClient) {
+        // Fetch real pool data from chain
+        dexClient.fetchPoolReserves(new PublicKey(pool.poolAddress)).then(poolData => {
+          if (poolData) {
+            const updatedPool = {
+              ...pool,
+              reserveA: poolData.reserveA?.toNumber?.() || poolData.reserveA || 0,
+              reserveB: poolData.reserveB?.toNumber?.() || poolData.reserveB || 0,
+              totalLp: poolData.lpSupply?.toNumber?.() || poolData.lpSupply || 0,
+            };
+            setSelectedPool(updatedPool);
+            setEstimatedOutput('Enter amount to estimate');
+          } else {
+            setSelectedPool(pool);
+            setEstimatedOutput('Enter amount to estimate');
+          }
+        }).catch(e => {
+          console.error('Failed to fetch pool reserves:', e);
+          setSelectedPool(pool);
+          setEstimatedOutput('Enter amount to estimate');
+        });
       } else {
-        setEstimatedOutput('Enter amount to estimate');
+        setSelectedPool(pool || null);
+        if (!pool) {
+          setEstimatedOutput('❌ No liquidity pool found for this pair');
+        } else {
+          setEstimatedOutput('Enter amount to estimate');
+        }
       }
     }
-  }, [fromToken, toToken, pools]);
+  }, [fromToken, toToken, pools, dexClient]);
 
   // Estimate swap output
   const handleEstimateSwap = () => {

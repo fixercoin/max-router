@@ -287,6 +287,40 @@ export class MaxDexClient {
     return address;
   }
 
+  async fetchPoolReserves(pool: PublicKey): Promise<any> {
+    try {
+      const poolAccount = await this.program.account.poolAccount.fetch(pool);
+      return poolAccount;
+    } catch (e) {
+      console.error("Failed to fetch pool reserves:", e);
+      return null;
+    }
+  }
+
+  async fetchAllPoolsByTokens(tokenMints: PublicKey[]): Promise<any[]> {
+    const pools = [];
+    for (let i = 0; i < tokenMints.length; i++) {
+      for (let j = i + 1; j < tokenMints.length; j++) {
+        try {
+          const poolAddress = await this.getPoolAddress(tokenMints[i], tokenMints[j]);
+          const poolData = await this.program.account.poolAccount.fetch(poolAddress);
+          pools.push({
+            poolAddress: poolAddress.toString(),
+            tokenA: tokenMints[i].toString(),
+            tokenB: tokenMints[j].toString(),
+            reserveA: poolData.reserveA?.toNumber?.() || 0,
+            reserveB: poolData.reserveB?.toNumber?.() || 0,
+            totalLp: poolData.lpSupply?.toNumber?.() || 0,
+            fee: poolData.feeBps || 0,
+          });
+        } catch (e) {
+          // Pool doesn't exist yet
+        }
+      }
+    }
+    return pools;
+  }
+
   getLastTransaction(): string {
     return this.lastTx;
   }
