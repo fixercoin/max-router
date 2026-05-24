@@ -12,23 +12,57 @@ const SwapRouterPage: React.FC = () => {
   const [swapStatus, setSwapStatus] = useState('');
   const [selectedPool, setSelectedPool] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [tokenPrices, setTokenPrices] = useState<Record<string, any>>({});
+  const [selectedChartToken, setSelectedChartToken] = useState<string>('So11111111111111111111111111111111111111112');
 
-  const allTokens = [
-    { symbol: 'USDC', mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr', decimals: 6, price: 1.00, change24h: 0.05, volume: 1250000, logo: null },
-    { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', decimals: 9, price: 145.20, change24h: 2.5, volume: 890000, logo: null },
-    ...deployedTokens.map(t => ({
-      symbol: t.symbol,
-      mint: t.mint,
-      decimals: t.decimals,
-      price: Math.random() * 100,
-      change24h: (Math.random() * 20) - 10,
-      volume: Math.random() * 100000,
-      logo: t.logo || null
-    }))
-  ];
+  // Fetch token prices from DexScreener API
+  const fetchTokenPrice = async (mintAddress: string) => {
+    try {
+      const response = await fetch(`https://api.dexscreener.com/latest/dex/token/${mintAddress}`);
+      const data = await response.json();
+      if (data.pairs && data.pairs.length > 0) {
+        const pair = data.pairs[0];
+        return {
+          price: parseFloat(pair.priceUsd),
+          change24h: parseFloat(pair.priceChange?.h24 || 0),
+          volume24h: parseFloat(pair.volume?.h24 || 0),
+          liquidity: parseFloat(pair.liquidity?.usd || 0),
+          pairAddress: pair.pairAddress
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to fetch price for token:', mintAddress, error);
+      return null;
+    }
+  };
+
+  // Fetch prices for all tokens
+  useEffect(() => {
+    const fetchAllPrices = async () => {
+      const prices: Record<string, any> = {};
+      for (const token of allTokens) {
+        const priceData = await fetchTokenPrice(token.mint);
+        if (priceData) {
+          prices[token.mint] = priceData;
+        }
+      }
+      setTokenPrices(prices);
+    };
+    
+    fetchAllPrices();
+  }, [deployedTokens]);
+
+  // Update token objects with real-time prices
+  const tokensWithPrices = allTokens.map(token => ({
+    ...token,
+    price: tokenPrices[token.mint]?.price || token.price,
+    change24h: tokenPrices[token.mint]?.change24h || token.change24h,
+    volume24h: tokenPrices[token.mint]?.volume24h || token.volume,
+  }));
 
   // Filter tokens based on search query
-  const filteredTokens = allTokens.filter(token =>
+  const filteredTokens = tokensWithPrices.filter(token =>
     token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
     token.mint.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -196,9 +230,19 @@ const SwapRouterPage: React.FC = () => {
     }
   };
 
+  // Generate Birdeye chart URL
+  const getBirdeyeChartUrl = (mintAddress: string) => {
+    return `https://birdeye.so/token/${mintAddress}?chain=solana`;
+  };
+
+  // Generate Birdeye embed chart URL
+  const getBirdeyeEmbedUrl = (mintAddress: string) => {
+    return `https://birdeye.so/tv-widget/${mintAddress}?chain=solana&viewMode=price&chartInterval=1D&chartType=CandleStick`;
+  };
+
   return (
     <div className="swap-router-three-columns">
-      {/* LEFT COLUMN - TOKENS LIST WITH SEARCH */}
+      {/* LEFT COLUMN - TOKENS LIST WITH SEARCH - 20% */}
       <div className="left-column">
         <div className="column-header">TOKENS LIST</div>
         
@@ -206,7 +250,7 @@ const SwapRouterPage: React.FC = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="SEARCH TOKENS BY NAME OR ADDRESS..."
+            placeholder="SEARCH TOKENS..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -217,7 +261,11 @@ const SwapRouterPage: React.FC = () => {
             <div className="empty-message">NO TOKENS FOUND</div>
           ) : (
             filteredTokens.map((token, idx) => (
-              <div key={idx} className="token-item">
+              <div 
+                key={idx} 
+                className={`token-item ${selectedChartToken === token.mint ? 'active' : ''}`}
+                onClick={() => setSelectedChartToken(token.mint)}
+              >
                 <div className="token-info">
                   {token.logo ? (
                     <img src={token.logo} alt={token.symbol} className="token-logo-small" />
@@ -226,7 +274,7 @@ const SwapRouterPage: React.FC = () => {
                   )}
                   <div className="token-details">
                     <div className="token-symbol">{token.symbol}</div>
-                    <div className="token-mint">{token.mint.slice(0, 8)}...</div>
+                    <div className="token-mint">{token.mint.slice(0, 6)}...</div>
                   </div>
                 </div>
                 <div className="token-stats">
@@ -241,35 +289,81 @@ const SwapRouterPage: React.FC = () => {
         </div>
       </div>
 
-      {/* CENTER COLUMN - TOKEN CHART */}
+      {/* CENTER COLUMN - TOKEN CHART WITH BIRDEYE - 50% */}
       <div className="center-column">
         <div className="column-header">TOKEN CHART</div>
         
         <div className="chart-container">
-          <div className="chart-placeholder">
-            <div className="chart-icon"></div>
-            <div className="chart-text">CHART WILL APPEAR HERE</div>
-            <div className="chart-subtext">SELECT A TOKEN FROM LEFT COLUMN TO VIEW CHART</div>
-          </div>
+          <iframe
+            src={getBirdeyeEmbedUrl(selectedChartToken)}
+            width="100%"
+            height="500"
+            frameBorder="0"
+            allowFullScreen
+            className="birdeye-chart"
+            title="Birdeye Chart"
+          />
         </div>
 
         <div className="chart-stats">
-          <div className="chart-stat-item">
-            <span className="chart-stat-label">24H VOLUME</span>
-            <span className="chart-stat-value">$1,250,000</span>
-          </div>
-          <div className="chart-stat-item">
-            <span className="chart-stat-label">MARKET CAP</span>
-            <span className="chart-stat-value">$45,200,000</span>
-          </div>
-          <div className="chart-stat-item">
-            <span className="chart-stat-label">TOTAL SUPPLY</span>
-            <span className="chart-stat-value">1,000,000</span>
-          </div>
+          {tokenPrices[selectedChartToken] && (
+            <>
+              <div className="chart-stat-item">
+                <span className="chart-stat-label">24H VOLUME</span>
+                <span className="chart-stat-value">
+                  ${tokenPrices[selectedChartToken]?.volume24h?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div className="chart-stat-item">
+                <span className="chart-stat-label">LIQUIDITY</span>
+                <span className="chart-stat-value">
+                  ${tokenPrices[selectedChartToken]?.liquidity?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div className="chart-stat-item">
+                <span className="chart-stat-label">VIEW ON BIRDEYE</span>
+                <span className="chart-stat-value">
+                  <a 
+                    href={getBirdeyeChartUrl(selectedChartToken)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#6c9bd2', textDecoration: 'none' }}
+                  >
+                    CLICK HERE
+                  </a>
+                </span>
+              </div>
+            </>
+          )}
+          {!tokenPrices[selectedChartToken] && (
+            <>
+              <div className="chart-stat-item">
+                <span className="chart-stat-label">24H VOLUME</span>
+                <span className="chart-stat-value">LOADING...</span>
+              </div>
+              <div className="chart-stat-item">
+                <span className="chart-stat-label">LIQUIDITY</span>
+                <span className="chart-stat-value">LOADING...</span>
+              </div>
+              <div className="chart-stat-item">
+                <span className="chart-stat-label">VIEW ON BIRDEYE</span>
+                <span className="chart-stat-value">
+                  <a 
+                    href={getBirdeyeChartUrl(selectedChartToken)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#6c9bd2', textDecoration: 'none' }}
+                  >
+                    CLICK HERE
+                  </a>
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* RIGHT COLUMN - SWAP */}
+      {/* RIGHT COLUMN - SWAP - 30% */}
       <div className="right-column">
         <div className="column-header">SWAP TOKENS</div>
         
@@ -280,14 +374,14 @@ const SwapRouterPage: React.FC = () => {
               className="swap-select"
               value={fromToken?.mint || ''} 
               onChange={(e) => {
-                const token = allTokens.find(t => t.mint === e.target.value);
+                const token = tokensWithPrices.find(t => t.mint === e.target.value);
                 setFromToken(token);
               }}
             >
               <option value="">SELECT TOKEN</option>
-              {allTokens.map((t) => (
+              {tokensWithPrices.map((t) => (
                 <option key={t.mint} value={t.mint}>
-                  {t.symbol}
+                  {t.symbol} - ${t.price?.toFixed(4) || '0.00'}
                 </option>
               ))}
             </select>
@@ -301,14 +395,14 @@ const SwapRouterPage: React.FC = () => {
               className="swap-select"
               value={toToken?.mint || ''} 
               onChange={(e) => {
-                const token = allTokens.find(t => t.mint === e.target.value);
+                const token = tokensWithPrices.find(t => t.mint === e.target.value);
                 setToToken(token);
               }}
             >
               <option value="">SELECT TOKEN</option>
-              {allTokens.map((t) => (
+              {tokensWithPrices.map((t) => (
                 <option key={t.mint} value={t.mint}>
-                  {t.symbol}
+                  {t.symbol} - ${t.price?.toFixed(4) || '0.00'}
                 </option>
               ))}
             </select>
@@ -382,32 +476,44 @@ const SwapRouterPage: React.FC = () => {
           padding: 0;
         }
 
-        .left-column,
-        .center-column,
-        .right-column {
-          flex: 1;
+        .left-column {
+          flex: 0 0 20%;
           display: flex;
           flex-direction: column;
           background: rgba(12, 17, 26, 0.9);
-          padding: 24px;
+          padding: 20px;
           overflow-y: auto;
           min-height: 100vh;
-        }
-
-        .left-column {
           border-right: 1px solid #232a36;
         }
 
         .center-column {
+          flex: 0 0 50%;
+          display: flex;
+          flex-direction: column;
+          background: rgba(12, 17, 26, 0.9);
+          padding: 20px;
+          overflow-y: auto;
+          min-height: 100vh;
           border-right: 1px solid #232a36;
         }
 
+        .right-column {
+          flex: 0 0 30%;
+          display: flex;
+          flex-direction: column;
+          background: rgba(12, 17, 26, 0.9);
+          padding: 20px;
+          overflow-y: auto;
+          min-height: 100vh;
+        }
+
         .column-header {
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
           color: #6c9bd2;
-          margin-bottom: 24px;
-          padding-bottom: 12px;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
           border-bottom: 2px solid #6c9bd2;
           letter-spacing: 1px;
           text-align: center;
@@ -419,30 +525,23 @@ const SwapRouterPage: React.FC = () => {
 
         .search-input {
           width: 100%;
-          padding: 12px;
+          padding: 10px;
           background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 8px;
           color: #e6edf5;
-          font-size: 13px;
-          transition: all 0.2s;
+          font-size: 12px;
         }
 
         .search-input:focus {
           outline: none;
           border-color: #6c9bd2;
-          box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
-        }
-
-        .search-input::placeholder {
-          color: #5a6e8a;
-          letter-spacing: 0.5px;
         }
 
         .tokens-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 8px;
           flex: 1;
           overflow-y: auto;
         }
@@ -451,7 +550,7 @@ const SwapRouterPage: React.FC = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 12px;
+          padding: 10px;
           background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 8px;
@@ -462,31 +561,35 @@ const SwapRouterPage: React.FC = () => {
         .token-item:hover {
           border-color: #6c9bd2;
           background: #0f1419;
-          transform: translateX(4px);
+        }
+
+        .token-item.active {
+          border-color: #6c9bd2;
+          background: rgba(108, 155, 210, 0.1);
         }
 
         .token-info {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
         }
 
         .token-logo-small {
-          width: 32px;
-          height: 32px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           object-fit: cover;
         }
 
         .token-logo-placeholder {
-          width: 32px;
-          height: 32px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: 700;
           color: white;
         }
@@ -497,13 +600,13 @@ const SwapRouterPage: React.FC = () => {
         }
 
         .token-symbol {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 700;
           color: #6c9bd2;
         }
 
         .token-mint {
-          font-size: 10px;
+          font-size: 9px;
           color: #5a6e8a;
         }
 
@@ -512,13 +615,13 @@ const SwapRouterPage: React.FC = () => {
         }
 
         .token-price {
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 600;
           color: #e6edf5;
         }
 
         .token-change {
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 600;
         }
 
@@ -531,53 +634,19 @@ const SwapRouterPage: React.FC = () => {
         }
 
         .chart-container {
-          flex: 1;
-          min-height: 400px;
+          width: 100%;
+          height: 500px;
           background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 12px;
           margin-bottom: 20px;
+          overflow: hidden;
         }
 
-        .chart-placeholder {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
+        .birdeye-chart {
+          width: 100%;
           height: 100%;
-          min-height: 400px;
-        }
-
-        .chart-icon {
-          width: 80px;
-          height: 80px;
-          border: 3px solid #232a36;
-          border-radius: 50%;
-          margin-bottom: 20px;
-          position: relative;
-        }
-
-        .chart-icon::before {
-          content: '';
-          position: absolute;
-          top: 20px;
-          left: 20px;
-          width: 40px;
-          height: 40px;
-          border-left: 3px solid #6c9bd2;
-          border-bottom: 3px solid #6c9bd2;
-        }
-
-        .chart-text {
-          font-size: 16px;
-          font-weight: 700;
-          color: #6c9bd2;
-          margin-bottom: 8px;
-        }
-
-        .chart-subtext {
-          font-size: 12px;
-          color: #5a6e8a;
+          border: none;
         }
 
         .chart-stats {
@@ -604,7 +673,7 @@ const SwapRouterPage: React.FC = () => {
         }
 
         .chart-stat-value {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 700;
           color: #6c9bd2;
         }
@@ -612,13 +681,13 @@ const SwapRouterPage: React.FC = () => {
         .swap-container {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
         }
 
         .swap-section {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px;
         }
 
         .swap-label {
@@ -628,40 +697,24 @@ const SwapRouterPage: React.FC = () => {
           letter-spacing: 1px;
         }
 
-        .swap-select {
+        .swap-select, .swap-input {
           width: 100%;
-          padding: 12px;
+          padding: 10px;
           background: #0a0e15;
           border: 1px solid #232a36;
           border-radius: 8px;
           color: #e6edf5;
-          font-size: 13px;
-          cursor: pointer;
+          font-size: 12px;
         }
 
-        .swap-select:focus {
-          outline: none;
-          border-color: #6c9bd2;
-        }
-
-        .swap-input {
-          width: 100%;
-          padding: 12px;
-          background: #0a0e15;
-          border: 1px solid #232a36;
-          border-radius: 8px;
-          color: #e6edf5;
-          font-size: 14px;
-        }
-
-        .swap-input:focus {
+        .swap-select:focus, .swap-input:focus {
           outline: none;
           border-color: #6c9bd2;
         }
 
         .swap-arrow {
           text-align: center;
-          font-size: 20px;
+          font-size: 18px;
           color: #6c9bd2;
         }
 
@@ -671,18 +724,18 @@ const SwapRouterPage: React.FC = () => {
 
         .swap-buttons {
           display: flex;
-          gap: 12px;
+          gap: 10px;
           margin-top: 8px;
         }
 
         .estimate-btn {
           flex: 1;
-          padding: 12px;
+          padding: 10px;
           background: rgba(108, 155, 210, 0.1);
           border: 1px solid #6c9bd2;
           border-radius: 8px;
           color: #6c9bd2;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 700;
           cursor: pointer;
           letter-spacing: 1px;
@@ -694,12 +747,12 @@ const SwapRouterPage: React.FC = () => {
 
         .swap-btn {
           flex: 1;
-          padding: 12px;
+          padding: 10px;
           background: linear-gradient(135deg, #6c9bd2 0%, #4a7aab 100%);
           border: none;
           border-radius: 8px;
           color: white;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 700;
           cursor: pointer;
           letter-spacing: 1px;
@@ -715,18 +768,20 @@ const SwapRouterPage: React.FC = () => {
           cursor: not-allowed;
         }
 
-        .pool-info {
-          padding: 12px;
+        .pool-info, .estimated-output, .swap-status {
+          padding: 10px;
           background: #0c111a;
           border: 1px solid #1e2a3a;
           border-radius: 8px;
+          font-size: 10px;
+          color: #e6edf5;
+          line-height: 1.4;
         }
 
         .pool-info-row {
           display: flex;
           justify-content: space-between;
-          padding: 6px 0;
-          font-size: 11px;
+          padding: 4px 0;
         }
 
         .pool-info-label {
@@ -738,60 +793,27 @@ const SwapRouterPage: React.FC = () => {
           font-weight: 500;
         }
 
-        .estimated-output {
-          padding: 12px;
-          background: #0c111a;
-          border: 1px solid #1e2a3a;
-          border-radius: 8px;
-          font-size: 11px;
-          color: #e6edf5;
-          line-height: 1.5;
-        }
-
-        .swap-status {
-          padding: 12px;
-          background: #0c111a;
-          border: 1px solid #1e2a3a;
-          border-radius: 8px;
-          font-size: 11px;
-          color: #e6edf5;
-          line-height: 1.5;
-        }
-
         .empty-message {
           text-align: center;
           padding: 40px;
           color: #5a6e8a;
-          font-size: 13px;
+          font-size: 12px;
         }
 
-        .left-column::-webkit-scrollbar,
-        .center-column::-webkit-scrollbar,
-        .right-column::-webkit-scrollbar,
-        .tokens-list::-webkit-scrollbar {
-          width: 6px;
+        ::-webkit-scrollbar {
+          width: 4px;
         }
 
-        .left-column::-webkit-scrollbar-track,
-        .center-column::-webkit-scrollbar-track,
-        .right-column::-webkit-scrollbar-track,
-        .tokens-list::-webkit-scrollbar-track {
+        ::-webkit-scrollbar-track {
           background: #0c111a;
-          border-radius: 3px;
         }
 
-        .left-column::-webkit-scrollbar-thumb,
-        .center-column::-webkit-scrollbar-thumb,
-        .right-column::-webkit-scrollbar-thumb,
-        .tokens-list::-webkit-scrollbar-thumb {
+        ::-webkit-scrollbar-thumb {
           background: #232a36;
           border-radius: 3px;
         }
 
-        .left-column::-webkit-scrollbar-thumb:hover,
-        .center-column::-webkit-scrollbar-thumb:hover,
-        .right-column::-webkit-scrollbar-thumb:hover,
-        .tokens-list::-webkit-scrollbar-thumb:hover {
+        ::-webkit-scrollbar-thumb:hover {
           background: #6c9bd2;
         }
 
@@ -799,42 +821,35 @@ const SwapRouterPage: React.FC = () => {
           .swap-router-three-columns {
             flex-direction: column;
           }
-
-          .left-column {
+          
+          .left-column, .center-column, .right-column {
+            flex: none;
+            width: 100%;
             border-right: none;
             border-bottom: 1px solid #232a36;
-          }
-
-          .center-column {
-            border-right: none;
-            border-bottom: 1px solid #232a36;
-          }
-
-          .left-column,
-          .center-column,
-          .right-column {
-            min-height: auto;
           }
         }
 
         @media (max-width: 768px) {
-          .left-column,
-          .center-column,
-          .right-column {
-            padding: 16px;
+          .left-column, .center-column, .right-column {
+            padding: 15px;
           }
-
+          
           .column-header {
-            font-size: 18px;
+            font-size: 16px;
           }
-
+          
           .swap-buttons {
             flex-direction: column;
           }
-
+          
           .chart-stats {
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
+          }
+          
+          .chart-container {
+            height: 400px;
           }
         }
       `}</style>
