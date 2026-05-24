@@ -15,11 +15,11 @@ const SwapRouterPage: React.FC = () => {
   const [tokenPrices, setTokenPrices] = useState<Record<string, any>>({});
   const [selectedChartToken, setSelectedChartToken] = useState<string>('So11111111111111111111111111111111111111112');
 
-  // Define base tokens
-  const baseTokens = [
+  // Define base tokens - moved inside useMemo or defined as constant outside component
+  const baseTokens = React.useMemo(() => [
     { symbol: 'USDC', mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr', decimals: 6, price: 1.00, change24h: 0.05, volume: 1250000, logo: null },
     { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', decimals: 9, price: 145.20, change24h: 2.5, volume: 890000, logo: null },
-  ];
+  ], []);
 
   // Create allTokens array after deployedTokens is available
   const allTokens = React.useMemo(() => {
@@ -35,7 +35,7 @@ const SwapRouterPage: React.FC = () => {
         logo: t.logo || null
       }))
     ];
-  }, [deployedTokens]);
+  }, [baseTokens, deployedTokens]);
 
   // Fetch token prices from DexScreener API
   const fetchTokenPrice = async (mintAddress: string) => {
