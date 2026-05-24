@@ -261,7 +261,6 @@ const DeployTokenPage: React.FC = () => {
             </button>
 
             <div className="warning-text">
-              MAKE SURE YOU HAVE ENOUGH SOL FOR DEPLOYMENT FEES
             </div>
 
             {deployedTokens.length > 0 && (
