@@ -5,24 +5,22 @@ import { Connection } from '@solana/web3.js';
 
 const DeployTokenPage: React.FC = () => {
   const { wallet, deployedTokens, setDeployedTokens, dexClient, setDexClient } = useAppContext();
-  const [tokenName, setTokenName] = useState('MAX Token');
+  const [tokenName, setTokenName] = useState('MAX TOKEN');
   const [tokenSymbol, setTokenSymbol] = useState('MAX');
   const [tokenDecimals, setTokenDecimals] = useState(6);
   const [tokenSupply, setTokenSupply] = useState(100000000);
-  const [status, setStatus] = useState('Ready Solana Devnet');
+  const [status, setStatus] = useState('READY SOLANA DEVNET');
   
-  // Dropdown states for preset configurations
   const [selectedPreset, setSelectedPreset] = useState<string>('custom');
   const [selectedNetwork, setSelectedNetwork] = useState<string>('devnet');
   const [selectedTokenStandard, setSelectedTokenStandard] = useState<string>('spl');
   const [selectedMintAuthority, setSelectedMintAuthority] = useState<string>('wallet');
 
-  // Preset configurations
   const presets = {
-    custom: { name: 'MAX Token', symbol: 'MAX', supply: 100000000, decimals: 6 },
-    meme: { name: 'Doge MAX', symbol: 'DOGEMAX', supply: 1000000000, decimals: 9 },
-    utility: { name: 'Utility MAX', symbol: 'UMAX', supply: 50000000, decimals: 6 },
-    governance: { name: 'Governance MAX', symbol: 'GMAX', supply: 10000000, decimals: 6 }
+    custom: { name: 'MAX TOKEN', symbol: 'MAX', supply: 100000000, decimals: 6 },
+    meme: { name: 'DOGE MAX', symbol: 'DOGEMAX', supply: 1000000000, decimals: 9 },
+    utility: { name: 'UTILITY MAX', symbol: 'UMAX', supply: 50000000, decimals: 6 },
+    governance: { name: 'GOVERNANCE MAX', symbol: 'GMAX', supply: 10000000, decimals: 6 }
   };
 
   const handlePresetChange = (preset: string) => {
@@ -36,14 +34,13 @@ const DeployTokenPage: React.FC = () => {
     }
   };
 
-  // Initialize DEX first
   const initializeDex = async () => {
     if (!wallet) {
-      alert('Connect wallet first');
+      alert('CONNECT WALLET FIRST');
       return false;
     }
 
-    setStatus('Initializing DEX...');
+    setStatus('INITIALIZING DEX...');
 
     try {
       const connection = new Connection(selectedNetwork === 'devnet' 
@@ -54,25 +51,25 @@ const DeployTokenPage: React.FC = () => {
       
       await client.initializeDex();
       setDexClient(client);
-      setStatus('DEX Initialized Ready to deploy token');
+      setStatus('DEX INITIALIZED READY TO DEPLOY TOKEN');
       return true;
     } catch (e: any) {
       if (e.message.includes('already in use')) {
-        setStatus('DEX already initialized Ready to deploy token');
+        setStatus('DEX ALREADY INITIALIZED READY TO DEPLOY TOKEN');
         return true;
       }
-      setStatus(`DEX Init failed ${e.message}`);
+      setStatus(`DEX INIT FAILED ${e.message}`);
       return false;
     }
   };
 
   const handleDeployToken = async () => {
     if (!wallet) {
-      alert('Connect wallet first');
+      alert('CONNECT WALLET FIRST');
       return;
     }
 
-    setStatus('Preparing token deployment...');
+    setStatus('PREPARING TOKEN DEPLOYMENT...');
 
     try {
       let client = dexClient;
@@ -85,11 +82,11 @@ const DeployTokenPage: React.FC = () => {
         setDexClient(client);
       }
 
-      setStatus('Deploying token via MAX DEX program...');
+      setStatus('DEPLOYING TOKEN VIA MAX DEX PROGRAM...');
       const mintAddress = await client.deployToken(tokenName, tokenSymbol, tokenDecimals);
       
       const initialSupply = tokenSupply * Math.pow(10, tokenDecimals);
-      setStatus('Minting initial supply...');
+      setStatus('MINTING INITIAL SUPPLY...');
       await client.mintTokens(mintAddress, initialSupply);
 
       const metadataAddress = await client.getTokenMetadataAddress(mintAddress);
@@ -113,15 +110,15 @@ const DeployTokenPage: React.FC = () => {
       localStorage.setItem('MAX_deployed', JSON.stringify(newTokens));
 
       setStatus(
-        `Token deployed via MAX DEX\n` +
-        `Mint: ${mintAddress.toString()}\n` +
-        `Metadata: ${metadataAddress.toString()}\n` +
-        `Supply: ${tokenSupply.toLocaleString()} ${tokenSymbol}\n` +
-        `Network: ${selectedNetwork.toUpperCase()}\n` +
-        `View Token on Explorer: https://explorer.solana.com/address/${mintAddress.toString()}?cluster=${selectedNetwork}`
+        `TOKEN DEPLOYED VIA MAX DEX\n` +
+        `MINT: ${mintAddress.toString()}\n` +
+        `METADATA: ${metadataAddress.toString()}\n` +
+        `SUPPLY: ${tokenSupply.toLocaleString()} ${tokenSymbol}\n` +
+        `NETWORK: ${selectedNetwork.toUpperCase()}\n` +
+        `VIEW TOKEN ON EXPLORER: https://explorer.solana.com/address/${mintAddress.toString()}?cluster=${selectedNetwork}`
       );
       
-      setTokenName('MAX Token');
+      setTokenName('MAX TOKEN');
       setTokenSymbol('MAX');
       setTokenDecimals(6);
       setTokenSupply(10000000);
@@ -129,7 +126,7 @@ const DeployTokenPage: React.FC = () => {
       
     } catch (e: any) {
       setStatus(`${e.message}`);
-      console.error('Deployment error:', e);
+      console.error('DEPLOYMENT ERROR:', e);
     }
   };
 
@@ -149,78 +146,72 @@ const DeployTokenPage: React.FC = () => {
 
   return (
     <div className="deploy-token-two-column-layout">
-      {/* Left Card */}
+      {/* LEFT CARD - DEPLOYMENT SETTINGS */}
       <div className="left-card">
-        <h3 className="card-title-main">Deployment Settings</h3>
+        <div className="card-title-main">DEPLOYMENT SETTINGS</div>
         
-        {/* Status Card */}
         <div className="status-card">
           <div className="status-header">
-            <span className="status-title">Connection Status</span>
+            <span className="status-title">CONNECTION STATUS</span>
           </div>
           <div className="status-content">
-            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{status}</pre>
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0, textTransform: 'uppercase' }}>{status}</pre>
           </div>
         </div>
 
-        {/* Dropdown 1 */}
         <div className="dropdown-group">
-          <label className="dropdown-label">Token Preset</label>
+          <label className="dropdown-label">TOKEN PRESET</label>
           <select 
             className="dropdown-select"
             value={selectedPreset}
             onChange={(e) => handlePresetChange(e.target.value)}
           >
-            <option value="custom">Custom Token</option>
-            <option value="meme">Meme Token</option>
-            <option value="utility">Utility Token</option>
-            <option value="governance">Governance Token</option>
+            <option value="custom">CUSTOM TOKEN</option>
+            <option value="meme">MEME TOKEN</option>
+            <option value="utility">UTILITY TOKEN</option>
+            <option value="governance">GOVERNANCE TOKEN</option>
           </select>
         </div>
 
-        {/* Dropdown 2 */}
         <div className="dropdown-group">
-          <label className="dropdown-label">Network</label>
+          <label className="dropdown-label">NETWORK</label>
           <select 
             className="dropdown-select"
             value={selectedNetwork}
             onChange={(e) => setSelectedNetwork(e.target.value)}
           >
-            <option value="devnet">Devnet Test</option>
-            <option value="mainnet-beta">Mainnet Production</option>
+            <option value="devnet">DEVNET TEST</option>
+            <option value="mainnet-beta">MAINNET PRODUCTION</option>
           </select>
         </div>
 
-        {/* Dropdown 3 */}
         <div className="dropdown-group">
-          <label className="dropdown-label">Token Standard</label>
+          <label className="dropdown-label">TOKEN STANDARD</label>
           <select 
             className="dropdown-select"
             value={selectedTokenStandard}
             onChange={(e) => setSelectedTokenStandard(e.target.value)}
           >
-            <option value="spl">SPL Token</option>
-            <option value="spl2022">SPL Token 2022</option>
+            <option value="spl">SPL TOKEN</option>
+            <option value="spl2022">SPL TOKEN 2022</option>
           </select>
         </div>
 
-        {/* Dropdown 4 */}
         <div className="dropdown-group">
-          <label className="dropdown-label">Mint Authority</label>
+          <label className="dropdown-label">MINT AUTHORITY</label>
           <select 
             className="dropdown-select"
             value={selectedMintAuthority}
             onChange={(e) => setSelectedMintAuthority(e.target.value)}
           >
-            <option value="wallet">Current Wallet</option>
-            <option value="multisig">Multi-sig Coming Soon</option>
-            <option value="timelock">Time-lock Coming Soon</option>
+            <option value="wallet">CURRENT WALLET</option>
+            <option value="multisig">MULTI-SIG COMING SOON</option>
+            <option value="timelock">TIME-LOCK COMING SOON</option>
           </select>
         </div>
 
-        {/* Quick Supply Options */}
         <div className="quick-options">
-          <label className="dropdown-label">Quick Supply Options</label>
+          <label className="dropdown-label">QUICK SUPPLY OPTIONS</label>
           <div className="supply-buttons">
             <button onClick={() => handleQuickFill('small')} className="supply-btn">10K</button>
             <button onClick={() => handleQuickFill('medium')} className="supply-btn">1M</button>
@@ -228,22 +219,38 @@ const DeployTokenPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Info Card */}
         <div className="info-card">
           <div className="info-text">
-            <strong>Deployment Info</strong><br />
-            Fee: 0.05 SOL<br />
-            Time: 30 seconds<br />
-            Includes metadata<br />
-            Verified by MAX DEX
+            <strong>DEPLOYMENT INFO</strong><br />
+            FEE: 0.05 SOL<br />
+            TIME: 30 SECONDS<br />
+            INCLUDES METADATA<br />
+            VERIFIED BY MAX DEX
           </div>
         </div>
 
-        {/* Recent Deployments Card */}
+        {!dexClient && (
+          <button className="action-button initialize-btn" onClick={initializeDex}>
+            INITIALIZE DEX FIRST
+          </button>
+        )}
+
+        <button 
+          className="action-button deploy-btn" 
+          onClick={handleDeployToken}
+          disabled={!dexClient && !status.includes('ALREADY INITIALIZED')}
+        >
+          DEPLOY TOKEN ON MAX DEX
+        </button>
+
+        <div className="warning-text">
+          MAKE SURE YOU HAVE ENOUGH SOL FOR DEPLOYMENT FEES
+        </div>
+
         {deployedTokens.length > 0 && (
           <div className="recent-card">
             <div className="recent-header">
-              <span className="recent-title">Recent Deployments</span>
+              <span className="recent-title">RECENT DEPLOYMENTS</span>
             </div>
             <div className="recent-list">
               {deployedTokens.slice(-3).reverse().map((token, idx) => (
@@ -251,7 +258,7 @@ const DeployTokenPage: React.FC = () => {
                   <div className="recent-symbol">{token.symbol}</div>
                   <div className="recent-details">
                     <div>{token.name}</div>
-                    <div className="recent-supply">{token.totalSupply.toLocaleString()} supply</div>
+                    <div className="recent-supply">{token.totalSupply.toLocaleString()} SUPPLY</div>
                   </div>
                 </div>
               ))}
@@ -260,51 +267,49 @@ const DeployTokenPage: React.FC = () => {
         )}
       </div>
 
-      {/* Right Card */}
+      {/* RIGHT CARD - TOKEN CONFIGURATION */}
       <div className="right-card">
-        <h3 className="card-title-main">Token Configuration</h3>
+        <div className="card-title-main">TOKEN CONFIGURATION</div>
         
-        {/* Token Information Card */}
         <div className="token-info-card">
           <div className="card-header">
-            <span className="card-title">Token Information</span>
+            <span className="card-title">TOKEN INFORMATION</span>
           </div>
           <div className="card-content">
             <div className="info-row">
-              <span className="info-label">Token Name</span>
+              <span className="info-label">TOKEN NAME</span>
               <span className="info-value">{tokenName}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Token Symbol</span>
+              <span className="info-label">TOKEN SYMBOL</span>
               <span className="info-value">{tokenSymbol}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Decimals</span>
+              <span className="info-label">DECIMALS</span>
               <span className="info-value">{tokenDecimals}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Total Supply</span>
+              <span className="info-label">TOTAL SUPPLY</span>
               <span className="info-value highlight">{tokenSupply.toLocaleString()} {tokenSymbol}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Network</span>
+              <span className="info-label">NETWORK</span>
               <span className="info-value">{selectedNetwork.toUpperCase()}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Token Standard</span>
+              <span className="info-label">TOKEN STANDARD</span>
               <span className="info-value">{selectedTokenStandard.toUpperCase()}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Estimated Cost</span>
+              <span className="info-label">ESTIMATED COST</span>
               <span className="info-value">0.05 SOL</span>
             </div>
           </div>
         </div>
 
-        {/* Token Details Card */}
         <div className="config-card">
           <div className="card-header">
-            <span className="card-title">Token Details</span>
+            <span className="card-title">TOKEN DETAILS</span>
           </div>
           <div className="card-content">
             <div className="form-field">
@@ -313,8 +318,8 @@ const DeployTokenPage: React.FC = () => {
                 type="text"
                 className="field-input"
                 value={tokenName}
-                onChange={(e) => setTokenName(e.target.value)}
-                placeholder="Example: MAX Power"
+                onChange={(e) => setTokenName(e.target.value.toUpperCase())}
+                placeholder="MAX TOKEN"
               />
             </div>
             <div className="form-field">
@@ -323,7 +328,7 @@ const DeployTokenPage: React.FC = () => {
                 type="text"
                 className="field-input"
                 value={tokenSymbol}
-                onChange={(e) => setTokenSymbol(e.target.value)}
+                onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
                 placeholder="MAX"
               />
             </div>
@@ -352,30 +357,6 @@ const DeployTokenPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Actions Card */}
-        <div className="config-card">
-          <div className="card-header">
-            <span className="card-title">Deployment Actions</span>
-          </div>
-          <div className="card-content">
-            {!dexClient && (
-              <button className="action-button initialize-btn" onClick={initializeDex}>
-                INITIALIZE DEX FIRST
-              </button>
-            )}
-            <button 
-              className="action-button deploy-btn" 
-              onClick={handleDeployToken}
-              disabled={!dexClient && !status.includes('already initialized')}
-            >
-              DEPLOY TOKEN ON MAX DEX
-            </button>
-            <div className="warning-text">
-              Make sure you have enough SOL for deployment fees
-            </div>
-          </div>
-        </div>
       </div>
 
       <style>{`
@@ -389,21 +370,7 @@ const DeployTokenPage: React.FC = () => {
           border-radius: 16px;
         }
 
-        /* Left Card */
-        .left-card {
-          flex: 1;
-          background: rgba(12, 17, 26, 0.8);
-          border-radius: 12px;
-          border: 1px solid #232a36;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          backdrop-filter: blur(10px);
-          overflow-y: auto;
-        }
-
-        /* Right Card */
+        .left-card,
         .right-card {
           flex: 1;
           background: rgba(12, 17, 26, 0.8);
@@ -418,15 +385,16 @@ const DeployTokenPage: React.FC = () => {
         }
 
         .card-title-main {
-          font-size: 16px;
-          font-weight: 600;
+          font-size: 18px;
+          font-weight: 700;
           color: #6c9bd2;
           margin: 0 0 8px 0;
           padding-bottom: 12px;
           border-bottom: 2px solid #232a36;
+          text-align: center;
+          letter-spacing: 1px;
         }
 
-        /* Status Card */
         .status-card {
           background: #0c111a;
           border-radius: 10px;
@@ -437,6 +405,7 @@ const DeployTokenPage: React.FC = () => {
         .status-header {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
           padding: 12px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
@@ -445,20 +414,21 @@ const DeployTokenPage: React.FC = () => {
 
         .status-title {
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
           color: #8e9bae;
-          text-transform: uppercase;
+          letter-spacing: 1px;
         }
 
         .status-content {
           padding: 12px;
-          font-size: 12px;
+          font-size: 11px;
           color: #e6edf5;
           line-height: 1.5;
         }
 
-        /* Token Info Card */
-        .token-info-card {
+        .token-info-card,
+        .config-card,
+        .recent-card {
           background: #0c111a;
           border-radius: 12px;
           border: 1px solid #1e2a3a;
@@ -468,16 +438,18 @@ const DeployTokenPage: React.FC = () => {
         .card-header {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 10px;
-          padding: 16px 20px;
+          padding: 14px 20px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
           border-bottom: 1px solid #1e2a3a;
         }
 
         .card-title {
-          font-size: 14px;
-          font-weight: 600;
+          font-size: 13px;
+          font-weight: 700;
           color: #6c9bd2;
+          letter-spacing: 1px;
         }
 
         .card-content {
@@ -496,12 +468,14 @@ const DeployTokenPage: React.FC = () => {
         }
 
         .info-label {
-          font-size: 12px;
+          font-size: 11px;
+          font-weight: 600;
           color: #8e9bae;
+          letter-spacing: 0.5px;
         }
 
         .info-value {
-          font-size: 13px;
+          font-size: 12px;
           color: #e6edf5;
           font-weight: 500;
         }
@@ -511,7 +485,6 @@ const DeployTokenPage: React.FC = () => {
           font-weight: 700;
         }
 
-        /* Dropdown Styles */
         .dropdown-group {
           display: flex;
           flex-direction: column;
@@ -519,11 +492,10 @@ const DeployTokenPage: React.FC = () => {
         }
 
         .dropdown-label {
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 11px;
+          font-weight: 700;
           color: #8e9bae;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
         }
 
         .dropdown-select {
@@ -532,7 +504,8 @@ const DeployTokenPage: React.FC = () => {
           border: 1px solid #232a36;
           border-radius: 8px;
           color: #e6edf5;
-          font-size: 13px;
+          font-size: 12px;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
         }
@@ -547,7 +520,6 @@ const DeployTokenPage: React.FC = () => {
           box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
         }
 
-        /* Quick Options */
         .quick-options {
           display: flex;
           flex-direction: column;
@@ -567,6 +539,7 @@ const DeployTokenPage: React.FC = () => {
           border-radius: 6px;
           color: #8e9bae;
           font-size: 12px;
+          font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
         }
@@ -576,97 +549,36 @@ const DeployTokenPage: React.FC = () => {
           color: #6c9bd2;
         }
 
-        /* Config Cards */
-        .config-card {
-          background: #0c111a;
-          border-radius: 12px;
-          border: 1px solid #1e2a3a;
-          overflow: hidden;
-          transition: all 0.2s;
-        }
-
-        .config-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          border-color: #6c9bd2;
-        }
-
-        /* Form Fields */
-        .form-field {
-          margin-bottom: 16px;
-        }
-
-        .form-field:last-child {
-          margin-bottom: 0;
-        }
-
-        .field-label {
-          display: block;
-          font-size: 11px;
-          font-weight: 600;
-          color: #8e9bae;
-          text-transform: uppercase;
-          margin-bottom: 8px;
-          letter-spacing: 0.5px;
-        }
-
-        .field-input {
-          width: 100%;
-          padding: 10px 12px;
-          background: #0a0e15;
-          border: 1px solid #232a36;
-          border-radius: 8px;
-          color: #e6edf5;
-          font-size: 14px;
-          transition: all 0.2s;
-        }
-
-        .field-input:focus {
-          outline: none;
-          border-color: #6c9bd2;
-          box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
-        }
-
-        .form-row-two {
-          display: flex;
-          gap: 12px;
-        }
-
-        .form-field.half {
-          flex: 1;
-        }
-
-        /* Info Card */
         .info-card {
           background: rgba(108, 155, 210, 0.05);
           border: 1px solid #232a36;
           border-radius: 10px;
           padding: 12px;
+          text-align: center;
         }
 
         .info-text {
           font-size: 11px;
           color: #8e9bae;
-          line-height: 1.6;
+          line-height: 1.8;
+          letter-spacing: 0.5px;
         }
 
         .info-text strong {
           color: #6c9bd2;
+          font-size: 12px;
         }
 
-        /* Action Buttons */
         .action-button {
           width: 100%;
           padding: 12px;
           border: none;
           border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
+          font-size: 12px;
+          font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 12px;
+          letter-spacing: 1px;
         }
 
         .initialize-btn {
@@ -697,29 +609,68 @@ const DeployTokenPage: React.FC = () => {
 
         .warning-text {
           text-align: center;
-          font-size: 11px;
+          font-size: 10px;
+          font-weight: 600;
           color: #f39c12;
-          margin-top: 8px;
+          letter-spacing: 0.5px;
         }
 
-        /* Recent Deployments */
-        .recent-card {
-          background: #0c111a;
-          border-radius: 12px;
-          border: 1px solid #1e2a3a;
-          overflow: hidden;
+        .form-field {
+          margin-bottom: 16px;
+        }
+
+        .form-field:last-child {
+          margin-bottom: 0;
+        }
+
+        .field-label {
+          display: block;
+          font-size: 10px;
+          font-weight: 700;
+          color: #8e9bae;
+          margin-bottom: 8px;
+          letter-spacing: 1px;
+        }
+
+        .field-input {
+          width: 100%;
+          padding: 10px 12px;
+          background: #0a0e15;
+          border: 1px solid #232a36;
+          border-radius: 8px;
+          color: #e6edf5;
+          font-size: 13px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .field-input:focus {
+          outline: none;
+          border-color: #6c9bd2;
+          box-shadow: 0 0 0 2px rgba(108, 155, 210, 0.1);
+        }
+
+        .form-row-two {
+          display: flex;
+          gap: 12px;
+        }
+
+        .form-field.half {
+          flex: 1;
         }
 
         .recent-header {
-          padding: 16px 20px;
+          padding: 14px 20px;
           background: linear-gradient(135deg, #0f1419 0%, #0c111a 100%);
           border-bottom: 1px solid #1e2a3a;
+          text-align: center;
         }
 
         .recent-title {
-          font-size: 14px;
-          font-weight: 600;
+          font-size: 13px;
+          font-weight: 700;
           color: #6c9bd2;
+          letter-spacing: 1px;
         }
 
         .recent-list {
@@ -743,7 +694,7 @@ const DeployTokenPage: React.FC = () => {
         }
 
         .recent-symbol {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 700;
           color: #6c9bd2;
         }
@@ -753,17 +704,19 @@ const DeployTokenPage: React.FC = () => {
         }
 
         .recent-details div:first-child {
-          font-size: 12px;
+          font-size: 11px;
+          font-weight: 600;
           color: #e6edf5;
           margin-bottom: 4px;
         }
 
         .recent-supply {
-          font-size: 10px;
+          font-size: 9px;
+          font-weight: 600;
           color: #8e9bae;
+          letter-spacing: 0.5px;
         }
 
-        /* Scrollbar */
         .left-card::-webkit-scrollbar,
         .right-card::-webkit-scrollbar {
           width: 6px;
@@ -786,7 +739,6 @@ const DeployTokenPage: React.FC = () => {
           background: #6c9bd2;
         }
 
-        /* Responsive */
         @media (max-width: 1024px) {
           .deploy-token-two-column-layout {
             flex-direction: column;
