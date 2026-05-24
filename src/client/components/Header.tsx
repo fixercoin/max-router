@@ -10,7 +10,7 @@ declare global {
 
 interface WalletInfo {
   publicKey: string;
-  address: string;
+  provider: any;
   isConnected: boolean;
 }
 
@@ -40,7 +40,7 @@ const Header: React.FC = () => {
           if (accounts && accounts.length > 0) {
             const walletInfo: WalletInfo = {
               publicKey: accounts[0],
-              address: accounts[0],
+              provider: provider,
               isConnected: true
             };
             setWallet(walletInfo);
@@ -106,7 +106,7 @@ const Header: React.FC = () => {
 
       const walletInfo: WalletInfo = {
         publicKey: publicKey,
-        address: publicKey,
+        provider: provider,
         isConnected: true
       };
 
