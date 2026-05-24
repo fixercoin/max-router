@@ -239,9 +239,9 @@ const DeployTokenPage: React.FC = () => {
             <div className="info-card">
               <div className="info-text">
                 <strong>DEPLOYMENT INFO</strong><br />
-                FEE: 0.05 SOL<br />
-                TIME: 30 SECONDS<br />
-                INCLUDES METADATA<br />
+                FEE: 0.05 SOL -
+                TIME: 30 SECONDS -
+                INCLUDES METADATA -
                 VERIFIED BY MAX DEX
               </div>
             </div>
